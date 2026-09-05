@@ -1224,11 +1224,13 @@ p.add(new THREE.LineSegments(new THREE.EdgesGeometry(p.geometry,10),new THREE.Li
 scene.add(p);
 cylCol(-200,-18,14.5);
 const colors=['#ff2bd6','#ff2bd6','#3dff3d','#3dff3d','#ffee00','#ffee00','#4d4dff','#4d4dff','#f0f0f0','#f0f0f0','#00fff7'];
+const dreamSpot={x:-172,z:42};
 for(let i=0;i<26;i++){
 const a=rand(TAU),r=rand(16,78);
 const x=-200+Math.cos(a)*r,z=Math.sin(a)*r;
 if(Math.hypot(x+200,z+18)<27)continue;
 if(Math.abs(x+118)<10&&Math.abs(z)<12)continue;
+if(Math.hypot(x-dreamSpot.x,z-dreamSpot.z)<18)continue;
 const w=rand(7,18),d=rand(7,18),h=rand(9,42);
 const mat=Math.random()<0.14?M.redWall:grainMat(pick(colors));
 const b=box(w,h,d,mat,x,h/2,z,{ry:rand(0.2),rz:Math.random()<0.2?rand(-0.05,0.05):0});
@@ -1597,7 +1599,7 @@ floaty(m,0.1,2,0.25);
 const dreamsData=[
 {id:1,name:'CASSETTE DORADO',  zone:'Plaza Neón',      pos:[0,3.2,-26],   color:0xffee00},
 {id:2,name:'ESFERA DE ESTÁTICA',zone:'Sala Estática',  pos:[226,11.6,29], color:0x00fff7},
-{id:3,name:'PRISMA DE NEÓN',   zone:'Ciudad Febril',   pos:[-172,3.4,36], color:0xff2bd6},
+{id:3,name:'PRISMA DE NEÓN',   zone:'Ciudad Febril',   pos:[-172,3.2,42], color:0xff2bd6},
 {id:4,name:'MONOLITO RAINBOW', zone:'Monolitos Grises',pos:[0,6.4,181],   color:0x39ff6a},
 {id:5,name:'NÚCLEO DEL VOID',  zone:'Void Rojo',       pos:[0,2.2,-230],  color:0xff2200},
 {id:6,name:'SOL VAPOR',        zone:'Laguna Vapor',    pos:[-22,2.6,352], color:0xff8af0}

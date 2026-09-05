@@ -3367,7 +3367,7 @@ class BoxEntity extends BaseEntity {
   constructor(scene, world) {
     super(scene, world);
     this.radius = 0.4;
-    this.spawnDelay = 18; // [CAJA] común desde el inicio
+    this.spawnDelay = 8; // [CAJA] común desde el inicio
     this.timer = this.spawnDelay;
     this.deathName = 'EL PRESENTE';
     this.deathWhy = 'LO ABRISTE. ERA PARA TI.';
@@ -3381,11 +3381,11 @@ class BoxEntity extends BaseEntity {
     this.mesh.visible = false;
   }
   buildMesh() {
-    const matBox = makePS1Material(boxTexture(), 1.45, false);
-    const matMetal = makePS1Material(metalTexture(), 0.8, false);
-    const matSkin = makePS1Material(jackSkinTexture(), 0.9, false);
-    const matFace = makePS1Material(jackFaceTexture(), 1.6, false);
-    const matCone = makePS1Material(rustTexture(), 1.2, false);
+    const matBox = makePS1Material(boxTexture(), 0.7, false);
+    const matMetal = makePS1Material(metalTexture(), 0.55, false);
+    const matSkin = makePS1Material(jackSkinTexture(), 0.6, false);
+    const matFace = makePS1Material(jackFaceTexture(), 0.8, false);
+    const matCone = makePS1Material(rustTexture(), 0.7, false);
     matBox.uniforms.uFlicker = { value: 1 };
     matFace.uniforms.uFlicker = { value: 1 };
     const S = 0.85, H = 0.52;
@@ -3435,7 +3435,7 @@ class BoxEntity extends BaseEntity {
     rel = Math.atan2(Math.sin(rel), Math.cos(rel));
     return Math.max(-1, Math.min(1, -Math.sin(rel)));
   }
-  teleport(px, pz, minR = 8, maxR = 26) {
+  teleport(px, pz, minR = 5, maxR = 14) {
     const c = this.world.randomOpenCell(px, pz, minR, maxR);
     this.position.set(c.x, 0, c.z);
     this.mesh.position.copy(this.position);
@@ -3463,7 +3463,7 @@ class BoxEntity extends BaseEntity {
   }
   forceRetreat() {
     this.state = 'hidden';
-    this.timer = 10 + Math.random() * 8;
+    this.timer = 5 + Math.random() * 4;
     this.mesh.visible = false;
     this.resetVisual();
     this.caught = false;
@@ -3493,14 +3493,14 @@ class BoxEntity extends BaseEntity {
     if (this.state === 'idle') {
       this.animT += dt;
       this.mesh.rotation.y += dt * 0.4;
-      if (dist < 10) {
-        const urgency = 1 - dist / 10;
+      if (dist < 14) {
+        const urgency = 1 - dist / 14;
         this.noteTimer -= dt;
         if (this.noteTimer <= 0) {
-          this.noteTimer = 0.45 - urgency * 0.2;
+          this.noteTimer = 0.4 - urgency * 0.18;
           const note = BOX_MELODY[this.melodyIdx++ % BOX_MELODY.length];
           if (note) audio.musicBoxNote(
-            note, 0.06 + urgency * 0.11,
+            note, 0.18 + urgency * 0.32,
             this.panFor(this.position.x, this.position.z, player),
             25 + urgency * 70
           );
@@ -3511,7 +3511,7 @@ class BoxEntity extends BaseEntity {
       if (this.shakeT > 0) this.shakeT -= dt;
       const shaking = this.shakeT > 0 || dist < 3.5;
       this.base.rotation.z = shaking ? Math.sin(this.animT * 55) * 0.02 : 0;
-      if (dist < 2.6) { this.open(); audio.jackPop(); }
+      if (dist < 3.4) { this.open(); audio.jackPop(); }
       return 0;
     }
     if (this.state === 'chase') {

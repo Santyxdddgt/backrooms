@@ -3484,6 +3484,7 @@ this.mesh.position.copy(this.position);
 this.resetVisual();
 this.mesh.visible = true;
 this.state = 'idle';
+this.idleTime = 0;
 this.melodyIdx = 0;
 this.slammed = false; this.hissed = false;
 }
@@ -3530,16 +3531,18 @@ if (this.state === 'hidden') {
 if (!this.isAwake) return 0;
 this.timer -= dt;
 const pDist = Math.hypot(px - this.position.x, pz - this.position.z);
-if (pDist > 40 || this.timer <= 0) this.teleport(px, pz);
+if (pDist > 28 || this.timer <= 0) this.teleport(px, pz);
 return 0;
 }
 const dist = Math.hypot(px - this.position.x, pz - this.position.z);
 if (this.state === 'idle') {
 this.animT += dt;
+this.idleTime += dt;
 this.mesh.rotation.y += dt * 0.4;
-if (dist > 40) {
+const hasLOS = this.world.lineOfSight(this.position.x, this.position.z, px, pz);
+if (dist > 28 || (this.idleTime > 12 && !hasLOS)) {
 this.farFromPlayerT = (this.farFromPlayerT || 0) + dt;
-if (this.farFromPlayerT > 1.5) { this.teleport(px, pz); this.farFromPlayerT = 0; return 0; }
+if (this.farFromPlayerT > 1.0) { this.startVanish(); this.farFromPlayerT = 0; return 0; }
 } else { this.farFromPlayerT = 0; }
 if (dist < 24) {
 const urgency = 1 - dist / 24;
@@ -3565,9 +3568,9 @@ return 0;
 if (this.state === 'chase') {
 const hasLOS = this.world.lineOfSight(this.position.x, this.position.z, px, pz);
 if (hasLOS) this.lostTimer = 0; else this.lostTimer += dt;
-if (dist > 40) {
+if (dist > 28) {
 this.farFromPlayerT = (this.farFromPlayerT || 0) + dt;
-if (this.farFromPlayerT > 1.5) { this.teleport(px, pz); this.farFromPlayerT = 0; return 0; }
+if (this.farFromPlayerT > 1.0) { this.startVanish(); this.farFromPlayerT = 0; return 0; }
 } else { this.farFromPlayerT = 0; }
 if (this.lostTimer > 6) { this.startVanish(); return 0; }
 this.animT += dt * 4.2;

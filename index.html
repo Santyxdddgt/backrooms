@@ -1968,10 +1968,10 @@ o.type = 'square';
 o.frequency.setValueAtTime(880, now);
 o.frequency.exponentialRampToValueAtTime(1760, now + 0.07);
 const og = ctx.createGain();
-og.gain.setValueAtTime(0.25, now);
-og.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+og.gain.setValueAtTime(0.55, now);
+og.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
 o.connect(og); og.connect(this.master);
-o.start(now); o.stop(now + 0.3);
+o.start(now); o.stop(now + 0.35);
 const s = ctx.createOscillator();
 s.type = 'sine';
 s.frequency.setValueAtTime(520, now);
@@ -1980,11 +1980,11 @@ const vib = ctx.createOscillator(); vib.frequency.value = 16;
 const vg = ctx.createGain(); vg.gain.value = 40;
 vib.connect(vg); vg.connect(s.frequency);
 const sg = ctx.createGain();
-sg.gain.setValueAtTime(0.2, now);
-sg.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+sg.gain.setValueAtTime(0.45, now);
+sg.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
 s.connect(sg); sg.connect(this.master);
-s.start(now); s.stop(now + 0.55);
-vib.start(now); vib.stop(now + 0.55);
+s.start(now); s.stop(now + 0.65);
+vib.start(now); vib.stop(now + 0.65);
 [420, 470, 560].forEach((f, i) => {
 const r = ctx.createOscillator();
 r.type = 'sawtooth';
@@ -1995,7 +1995,7 @@ const rvg = ctx.createGain(); rvg.gain.value = 25;
 rv.connect(rvg); rvg.connect(r.frequency);
 const rg = ctx.createGain();
 rg.gain.setValueAtTime(0.0001, now + 0.1);
-rg.gain.exponentialRampToValueAtTime(0.08, now + 0.15);
+rg.gain.exponentialRampToValueAtTime(0.18, now + 0.15);
 rg.gain.exponentialRampToValueAtTime(0.0001, now + 0.9 + i * 0.1);
 const lp = ctx.createBiquadFilter();
 lp.type = 'lowpass'; lp.frequency.value = 1600;
@@ -2016,12 +2016,12 @@ const vib = ctx.createOscillator(); vib.frequency.value = 14;
 const vg = ctx.createGain(); vg.gain.value = 22;
 vib.connect(vg); vg.connect(o.frequency);
 const g = ctx.createGain();
-g.gain.setValueAtTime(0.06, now);
-g.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+g.gain.setValueAtTime(0.16, now);
+g.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
 const p = ctx.createStereoPanner(); p.pan.value = pan;
 o.connect(g); g.connect(p); p.connect(this.master);
-o.start(now); o.stop(now + 0.2);
-vib.start(now); vib.stop(now + 0.2);
+o.start(now); o.stop(now + 0.22);
+vib.start(now); vib.stop(now + 0.22);
 }
 lidSlam() {
 if (!this.ctx) return;
@@ -2032,19 +2032,19 @@ o.type = 'sine';
 o.frequency.setValueAtTime(160, now);
 o.frequency.exponentialRampToValueAtTime(48, now + 0.12);
 const g = ctx.createGain();
-g.gain.setValueAtTime(0.4, now);
-g.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+g.gain.setValueAtTime(0.85, now);
+g.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
 o.connect(g); g.connect(this.master);
-o.start(now); o.stop(now + 0.28);
+o.start(now); o.stop(now + 0.33);
 const src = ctx.createBufferSource();
 src.buffer = this.noiseBuf;
 const bp = ctx.createBiquadFilter();
 bp.type = 'bandpass'; bp.frequency.value = 700; bp.Q.value = 1.5;
 const ng = ctx.createGain();
-ng.gain.setValueAtTime(0.3, now);
-ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+ng.gain.setValueAtTime(0.7, now);
+ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
 src.connect(bp); bp.connect(ng); ng.connect(this.master);
-src.start(now, Math.random() * 1.5, 0.16);
+src.start(now, Math.random() * 1.5, 0.2);
 }
 vanishHiss() {
 if (!this.ctx) return;
@@ -2055,10 +2055,10 @@ src.buffer = this.noiseBuf;
 const hp = ctx.createBiquadFilter();
 hp.type = 'highpass'; hp.frequency.value = 2500;
 const g = ctx.createGain();
-g.gain.setValueAtTime(0.09, now);
-g.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+g.gain.setValueAtTime(0.22, now);
+g.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
 src.connect(hp); hp.connect(g); g.connect(this.master);
-src.start(now, Math.random() * 1.5, 0.65);
+src.start(now, Math.random() * 1.5, 0.75);
 }
 grabGrowl(dur = 1.9) {
 if (!this.ctx) return;
@@ -3396,22 +3396,23 @@ this.caught = false; this.target = null;
 }
 const BOX_MELODY = [523, 0, 523, 0, 587, 587, 659, 784, 659, 0, 523, 0, 523, 587, 659, 1047];
 class BoxEntity extends BaseEntity {
-constructor(scene, world) {
-super(scene, world);
-this.radius = 0.4;
-this.spawnDelay = 8;
-this.timer = this.spawnDelay;
-this.deathName = 'EL PRESENTE';
-this.deathWhy = 'LO ABRISTE. ERA PARA TI.';
-this.noteTimer = 0; this.melodyIdx = 0;
-this.nextShake = 2; this.shakeT = 0;
-this.boingPrev = 1; this.vanishT = 0;
-this.slammed = false; this.hissed = false;
-this.justOpened = false;
-this.buildMesh();
-scene.add(this.mesh);
-this.mesh.visible = false;
-}
+  constructor(scene, world) {
+    super(scene, world);
+    this.radius = 0.4;
+    this.spawnDelay = 2.2;
+    this.timer = this.spawnDelay;
+    this.deathName = 'EL PRESENTE';
+    this.deathWhy = 'LO ABRISTE. ERA PARA TI.';
+    this.noteTimer = 0; this.melodyIdx = 0;
+    this.nextShake = 2; this.shakeT = 0;
+    this.boingPrev = 1; this.vanishT = 0;
+    this.slammed = false; this.hissed = false;
+    this.justOpened = false;
+    this.woke = true;
+    this.buildMesh();
+    scene.add(this.mesh);
+    this.mesh.visible = false;
+  }
 buildMesh() {
 const matBox = makePS1Material(boxTexture(), 0.7, false);
 const matMetal = makePS1Material(metalTexture(), 0.55, false);
@@ -3449,9 +3450,15 @@ this.assembly.add(this.headG);
 this.assembly.visible = false;
 g.add(this.assembly);
 this.mesh = g;
+this.mesh.scale.setScalar(1.9);
+}
+wake() {
+if (this.isAwake) return;
+this.isAwake = true;
+this.timer = 0.5;
 }
 resetVisual() {
-this.mesh.scale.setScalar(1);
+this.mesh.scale.setScalar(1.9);
 this.mesh.position.y = 0;
 this.mesh.rotation.x = 0;
 this.assembly.visible = false;
@@ -3467,7 +3474,7 @@ let rel = ang - (player.yaw + Math.PI);
 rel = Math.atan2(Math.sin(rel), Math.cos(rel));
 return Math.max(-1, Math.min(1, -Math.sin(rel)));
 }
-teleport(px, pz, minR = 5, maxR = 14) {
+teleport(px, pz, minR = 4, maxR = 6) {
 const c = this.world.randomOpenCell(px, pz, minR, maxR);
 this.position.set(c.x, 0, c.z);
 this.mesh.position.copy(this.position);
@@ -3495,7 +3502,7 @@ this.slammed = false; this.hissed = false;
 }
 forceRetreat() {
 this.state = 'hidden';
-this.timer = 5 + Math.random() * 4;
+this.timer = 3.5;
 this.mesh.visible = false;
 this.resetVisual();
 this.caught = false;
@@ -3517,6 +3524,7 @@ this.mesh.rotation.y = Math.atan2(px - this.position.x, pz - this.position.z);
 return 0.5;
 }
 if (this.state === 'hidden') {
+if (!this.isAwake) return 0;
 this.timer -= dt;
 if (this.timer <= 0) this.teleport(px, pz);
 return 0;
@@ -3525,14 +3533,14 @@ const dist = Math.hypot(px - this.position.x, pz - this.position.z);
 if (this.state === 'idle') {
 this.animT += dt;
 this.mesh.rotation.y += dt * 0.4;
-if (dist < 14) {
-const urgency = 1 - dist / 14;
+if (dist < 24) {
+const urgency = 1 - dist / 24;
 this.noteTimer -= dt;
 if (this.noteTimer <= 0) {
-this.noteTimer = 0.4 - urgency * 0.18;
+this.noteTimer = 0.32 - urgency * 0.14;
 const note = BOX_MELODY[this.melodyIdx++ % BOX_MELODY.length];
 if (note) audio.musicBoxNote(
-note, 0.18 + urgency * 0.32,
+note, 0.42 + urgency * 0.55,
 this.panFor(this.position.x, this.position.z, player),
 25 + urgency * 70
 );
@@ -3573,13 +3581,13 @@ this.headG.position.y = 0.08 + 0.65 * Math.max(0.2, 1 - closeP);
 if (this.vanishT >= 0.3 && !this.slammed) { this.slammed = true; audio.lidSlam(); }
 if (this.vanishT > 0.3) {
 const p = Math.min(1, (this.vanishT - 0.3) / 0.65);
-this.mesh.scale.setScalar(Math.max(0.02, 1 - p));
+this.mesh.scale.setScalar(Math.max(0.02, 1.9 - 1.9 * p));
 this.mesh.position.y = -0.3 * p;
 if (!this.hissed) { this.hissed = true; audio.vanishHiss(); }
 }
 if (this.vanishT >= 0.95) {
 this.state = 'hidden';
-this.timer = 6 + Math.random() * 8;
+this.timer = 3.5;
 this.mesh.visible = false;
 this.resetVisual();
 }
@@ -3594,6 +3602,7 @@ this.mesh.visible = false;
 this.resetVisual();
 this.caught = false;
 this.justOpened = false;
+this.isAwake = false;
 }
 }
 class EntityManager {
@@ -4364,6 +4373,7 @@ if (devMode) {
 devUI.classList.remove('hidden');
 devToggle.classList.remove('hidden');
 }
+entities.box.wake();
 touchRadarRequest = false;
 if (!objectiveShown) showObjective();
 }

@@ -4027,6 +4027,7 @@ camera.rotation.order = 'YXZ';
 camera.rotation.set(0, Math.atan2(-dx, -dz), 0);
 setTimeout(async function(){
 const extra = extraShards + Math.max(0, shardCount - SHARDS_NEEDED);
+markLevelCompleted('2', Math.floor(playTime), lives, shardCount);
 const out = new URLSearchParams({
 lives: lives,
 time: Math.floor(playTime),
@@ -4581,6 +4582,7 @@ audio.init();
 sfxEntityKill.load();
 sfxStalkerScare.load();
 stopTabAuto();
+recordLevelAttempt('2');
 if (IS_TOUCH) { tryFullscreenLandscape(); enterPlay(); }
 else lockPointer();
 }
@@ -4637,6 +4639,7 @@ state = 'death';
 audio.death();
 post.uniforms.uStatic.value = 1.0;
 survivedEl.textContent = `SOBREVIVISTE ${Math.floor(playTime)} SEGUNDOS`;
+recordLevelDeath('2', Math.floor(playTime), lives);
 if (killer) {
 deathKillerEl.textContent = killer.deathName;
 deathWhyEl.textContent = killer.deathWhy;
@@ -5044,6 +5047,8 @@ post.uniforms.uStatic.value += stingerBurst * 0.3;
 post.render(scene, camera, t);
 }
 // ===================== INICIALIZACIÓN =====================
+// ===================== [INIT PROGRESO] =====================
+loadSave();
 world.update(0, 0);
 spawnShards();
 buildRift();

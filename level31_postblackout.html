@@ -579,10 +579,90 @@ var TOTAL_SHARDS  = Math.max(SHARDS_NEEDED, parseInt(Q.total||'8',10)||8);
 var MAX_LIVES     = 2;
 var GITHUB_PAGES  = 'https://santyxdddgt.github.io/backrooms/';
 var ON_PAGES      = location.hostname === 'santyxdddgt.github.io';
-var NEXT_LOCAL    = 'levelFUN.html';
+var NEXT_LOCAL    = 'levelfun.html';
 var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints>0 ||
 (window.matchMedia && matchMedia('(pointer:coarse)').matches);
 if(Q.ui==='0') isTouch=false;
+
+/* ============ [PROGRESO / LOCALSTORAGE — BACKROOMS_SAVE_V1] ============ */
+var SAVE_KEY = 'BACKROOMS_SAVE_V1';
+function defaultSave() {
+return {
+shards: {}, lives: {}, levelsCompleted: [],
+bestTime: {}, lastTime: {}, attempts: {}, deaths: {}, wins: {},
+hasVisitedHub: false,
+totalAttempts: 0, totalDeaths: 0, totalWins: 0, totalShards: 0,
+lastVisitedAt: null,
+};
+}
+var save = defaultSave();
+function loadSave() {
+try {
+var raw = localStorage.getItem(SAVE_KEY);
+if (!raw) return;
+var parsed = JSON.parse(raw);
+if (parsed && typeof parsed === 'object') {
+save = Object.assign(defaultSave(), parsed);
+for (var k of ['shards','lives','bestTime','lastTime','attempts','deaths','wins']) {
+save[k] = Object.assign({}, save[k] || {});
+}
+if (!Array.isArray(save.levelsCompleted)) save.levelsCompleted = [];
+}
+} catch (_) {
+save = defaultSave();
+}
+}
+function persistSave() {
+try {
+save.lastVisitedAt = new Date().toISOString();
+localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+} catch (_) {}
+}
+function isLevelCompleted(id) { return save.levelsCompleted.indexOf(id) !== -1; }
+function markLevelCompleted(id, timeSec, livesEnd, shardsEnd) {
+if (isLevelCompleted(id)) {
+if (typeof timeSec === 'number') {
+var t = Math.max(0, Math.floor(timeSec));
+if (typeof save.bestTime[id] !== 'number' || t < save.bestTime[id]) save.bestTime[id] = t;
+save.lastTime[id] = t;
+}
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+if (typeof shardsEnd === 'number') {
+save.shards[id] = Math.max(save.shards[id] || 0, shardsEnd);
+save.totalShards = Object.values(save.shards).reduce(function(a,b){return a+(b||0);},0);
+}
+save.wins[id] = (save.wins[id] || 0) + 1;
+save.totalWins++;
+} else {
+save.levelsCompleted.push(id);
+if (typeof timeSec === 'number') {
+save.bestTime[id] = Math.max(0, Math.floor(timeSec));
+save.lastTime[id] = Math.max(0, Math.floor(timeSec));
+}
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+if (typeof shardsEnd === 'number') {
+save.shards[id] = shardsEnd;
+save.totalShards = Object.values(save.shards).reduce(function(a,b){return a+(b||0);},0);
+}
+save.wins[id] = 1;
+save.totalWins++;
+}
+persistSave();
+}
+function recordLevelAttempt(id) {
+save.attempts[id] = (save.attempts[id] || 0) + 1;
+save.totalAttempts++;
+persistSave();
+}
+function recordLevelDeath(id, timeSec, livesEnd) {
+save.deaths[id] = (save.deaths[id] || 0) + 1;
+save.totalDeaths++;
+if (typeof timeSec === 'number') save.lastTime[id] = Math.max(0, Math.floor(timeSec));
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+persistSave();
+}
+/* [INIT PROGRESO] */
+loadSave();
 
 /* ============ AJUSTES / SETTINGS (persistidos) ============ */
 var opts = { vhs:true, mirror:true, res:'high', amb:'normal', grain:true, detailedBloodButtons:true };
@@ -2414,6 +2494,7 @@ dieByBite();return;}
 ENT.state='windup';ENT.tS=-1.15;surv.encounters++;droneOn();}
 function dieByBite(){
 surv.dead=true;surv.cause='bite';surv.hp=0;
+recordLevelDeath('31_post', Math.floor(clockT-surv.t0), Math.max(0, lives));
 var fx=-Math.sin(yaw),fz=-Math.cos(yaw);
 ENT.x=player.x+fx*0.7;ENT.z=player.z+fz*0.7;
 ENT.yaw=Math.atan2(player.x-ENT.x,player.z-ENT.z);
@@ -2431,6 +2512,7 @@ setTimeout(function(){showDeathOv('bite');},1500);}
 function dieByInsanity(){
 if(surv.dead)return;
 surv.dead=true;surv.cause='insanity';
+recordLevelDeath('31_post', Math.floor(clockT-surv.t0), Math.max(0, lives));
 stopEntityAudio();sndBoom();addShake(0.3);grinFlash(700);
 try{if(document.exitPointerLock)document.exitPointerLock();}catch(e){}
 setTimeout(function(){showDeathOv('insanity');},1550);}
@@ -3494,10 +3576,12 @@ riftEntering=true;
 state='noclip';noclipT=0;
 stopEntityAudio();sndNoclipTransition();}
 function navigateToNextLevel(){
+var playTime=Math.floor(clockT-surv.t0);
 var extra=Math.max(0,shardCount-SHARDS_NEEDED);
+markLevelCompleted('31_post', playTime, Math.max(1, lives), shardCount);
 var out=new URLSearchParams();
-out.set('lives',lives);
-out.set('time',Math.floor(clockT-surv.t0));
+out.set('lives',Math.max(1,lives));
+out.set('time',playTime);
 out.set('shards',extra);
 var query='?'+out.toString();
 if(ON_PAGES){
@@ -3605,6 +3689,7 @@ document.getElementById('helpTxt').innerHTML=touchUI?
 'joystick mover · deslizar mirar · correr / linterna / agua / radar / pantalla completa':
 'WASD moverse · ratón mirar · SHIFT correr · F linterna · E beber · Q lanzar · R radar';
 function startGame(){if(started)return;started=true;
+recordLevelAttempt('31_post');
 document.documentElement.classList.add('blackout');   /* [POST] modo sangre permanente */
 startOv.style.opacity='0';
 setTimeout(function(){startOv.style.display='none';},1200);

@@ -501,6 +501,98 @@ const IS_TOUCH = document.documentElement.classList.contains('touch');
 const joyVec = {x:0, y:0};
 let touchRun = false;
 
+/* ══════════════ [PROGRESO / LOCALSTORAGE — BACKROOMS_SAVE_V1] ══════════════ */
+const SAVE_KEY = 'BACKROOMS_SAVE_V1';
+function defaultSave(){
+return {
+shards:{},lives:{},levelsCompleted:[],
+bestTime:{},lastTime:{},attempts:{},deaths:{},wins:{},
+hasVisitedHub:false,
+totalAttempts:0,totalDeaths:0,totalWins:0,totalShards:0,
+lastVisitedAt:null,
+};
+}
+let save = defaultSave();
+function loadSave(){
+try{
+const raw = localStorage.getItem(SAVE_KEY);
+if(!raw) return;
+const parsed = JSON.parse(raw);
+if(parsed && typeof parsed === 'object'){
+save = Object.assign(defaultSave(), parsed);
+for(const k of ['shards','lives','bestTime','lastTime','attempts','deaths','wins']){
+save[k] = Object.assign({}, save[k] || {});
+}
+if(!Array.isArray(save.levelsCompleted)) save.levelsCompleted = [];
+}
+}catch(_){
+save = defaultSave();
+}
+}
+function persistSave(){
+try{
+save.lastVisitedAt = new Date().toISOString();
+localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+}catch(_){}
+}
+function isLevelCompleted(id){return save.levelsCompleted.indexOf(id) !== -1;}
+function markLevelCompleted(id, timeSec, livesEnd, shardsEnd){
+if(isLevelCompleted(id)){
+if(typeof timeSec === 'number'){
+const t = Math.max(0, Math.floor(timeSec));
+if(typeof save.bestTime[id] !== 'number' || t < save.bestTime[id]) save.bestTime[id] = t;
+save.lastTime[id] = t;
+}
+if(typeof livesEnd === 'number') save.lives[id] = livesEnd;
+if(typeof shardsEnd === 'number'){
+save.shards[id] = Math.max(save.shards[id] || 0, shardsEnd);
+save.totalShards = Object.values(save.shards).reduce((a,b)=>a+(b||0),0);
+}
+save.wins[id] = (save.wins[id] || 0) + 1;
+save.totalWins++;
+}else{
+save.levelsCompleted.push(id);
+if(typeof timeSec === 'number'){
+save.bestTime[id] = Math.max(0, Math.floor(timeSec));
+save.lastTime[id] = Math.max(0, Math.floor(timeSec));
+}
+if(typeof livesEnd === 'number') save.lives[id] = livesEnd;
+if(typeof shardsEnd === 'number'){
+save.shards[id] = shardsEnd;
+save.totalShards = Object.values(save.shards).reduce((a,b)=>a+(b||0),0);
+}
+save.wins[id] = 1;
+save.totalWins++;
+}
+persistSave();
+}
+function recordLevelAttempt(id){
+save.attempts[id] = (save.attempts[id] || 0) + 1;
+save.totalAttempts++;
+persistSave();
+}
+function recordLevelDeath(id, timeSec, livesEnd){
+save.deaths[id] = (save.deaths[id] || 0) + 1;
+save.totalDeaths++;
+if(typeof timeSec === 'number') save.lastTime[id] = Math.max(0, Math.floor(timeSec));
+if(typeof livesEnd === 'number') save.lives[id] = livesEnd;
+persistSave();
+}
+/* [N31] Wrapper de muerte — nivel 31 no tiene sistema de vidas/enemigos.
+   Si en el futuro se agrega un evento de muerte/jumpscare, basta con llamar
+   a triggerLevel31Death() desde allí para registrar la estadística. */
+function triggerLevel31Death(){
+recordLevelDeath('31', Math.floor(S.t), Math.max(0, initialLives));
+}
+/* [N31] Sin sistema de vidas propio — se asume 1 vida al iniciar */
+let initialLives = 1;
+const _qp31 = new URLSearchParams(location.search);
+const _incomingLives = parseInt(_qp31.get('lives') ?? '1', 10);
+if(!isNaN(_incomingLives) && _incomingLives >= 1) initialLives = _incomingLives;
+let initialShards = Math.max(0, parseInt(_qp31.get('shards') ?? '0', 10));
+/* [INIT PROGRESO] */
+loadSave();
+
 /* ══════════════ [NUEVO] Constantes para el redirect post-apagón ══════════════ */
 const GH_PAGES = 'https://santyxdddgt.github.io/backrooms/';
 const ON_PAGES = location.hostname === 'santyxdddgt.github.io';
@@ -2286,6 +2378,7 @@ if(performance.now()<S.shieldUntil){e.stopImmediatePropagation();e.preventDefaul
 }
 function startGame(){
 if(S.started)return;S.started=true;
+recordLevelAttempt('31');
 $('#start').hidden=true;
 $('#guide').hidden=false;
 if(IS_TOUCH){
@@ -2624,8 +2717,11 @@ setVeil(1,1.0);
 try{toast('NOCLIP → POST-BLACKOUT');}catch(_){}
 /* Pequeño delay para que el fade se vea, después redirect */
 setTimeout(async function(){
+markLevelCompleted('31', Math.floor(S.t), Math.max(1, initialLives), initialShards);
 const out=new URLSearchParams({
+lives:Math.max(1, initialLives),
 time:Math.floor(S.t),
+shards:initialShards,
 nostalgia:Math.floor(S.nostalgia),
 zone:(typeof zoneId!=='undefined'&&zoneId)?zoneId:'ring',
 skates:S.skates?'1':'0',

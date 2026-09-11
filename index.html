@@ -259,6 +259,62 @@ line-height: 1.65;
 }
 .tabpane p { margin-bottom: 0.55em; }
 .tabpane p:last-child { margin-bottom: 0; }
+.stats-table { width: 100%; font-family: var(--anon); font-size: 0.82rem; letter-spacing: 0.05em; color: var(--old-ink); border-collapse: collapse; }
+.stats-table th, .stats-table td { border-bottom: 1px dotted rgba(207, 194, 122, 0.25); padding: 0.32em 0.4em; text-align: left; }
+.stats-table th { color: #e8dc96; letter-spacing: 0.18em; font-weight: normal; font-size: 0.72rem; opacity: 0.9; }
+.stats-table td.num { text-align: right; font-family: var(--tech); color: #cfc27a; }
+.stats-table tr.done td { color: #9affae; }
+.stats-table tr.done td.num { color: #9affae; }
+.stats-table tr.pending td { opacity: 0.55; }
+.stats-meta { margin-top: 0.8em; font-family: var(--anon); font-size: 0.78rem; letter-spacing: 0.06em; opacity: 0.85; line-height: 1.7; }
+.stats-meta b { color: #e8dc96; font-weight: normal; letter-spacing: 0.18em; }
+.tab.hub-tab {
+color: #c08cff;
+border-color: rgba(192, 140, 255, 0.55);
+background: rgba(28, 14, 40, 0.78);
+text-shadow: 0 0 8px rgba(192, 140, 255, 0.45);
+}
+.tab.hub-tab.on {
+color: #fff;
+background: rgba(48, 24, 70, 0.92);
+border-color: rgba(192, 140, 255, 0.85);
+}
+.hub-cta {
+border: 1px solid rgba(192, 140, 255, 0.7);
+background: rgba(38, 18, 58, 0.85);
+color: #e8c8ff;
+padding: 0.7em 1.2em;
+font-size: 0.92rem;
+letter-spacing: 0.18em;
+cursor: pointer;
+margin-top: 0.6em;
+text-shadow: 0 0 8px rgba(192, 140, 255, 0.55);
+box-shadow: 0 0 16px rgba(192, 140, 255, 0.25);
+-webkit-tap-highlight-color: transparent;
+touch-action: manipulation;
+font-family: inherit;
+}
+.hub-cta:hover, .hub-cta:active {
+background: rgba(96, 56, 160, 0.9);
+color: #fff;
+}
+.hub-cta.locked {
+opacity: 0.45;
+cursor: not-allowed;
+border-color: rgba(207, 194, 122, 0.4);
+color: var(--old-ink);
+background: rgba(20, 18, 6, 0.55);
+text-shadow: none;
+box-shadow: none;
+}
+.hub-warn {
+font-family: var(--anon);
+font-size: 0.74rem;
+letter-spacing: 0.08em;
+color: #ffb066;
+margin-top: 0.7em;
+opacity: 0.9;
+}
 .fluor {
 position: absolute;
 inset: 0;
@@ -908,7 +964,9 @@ body.touch #radar-hint { display: none; }
 <button type="button" class="tab on">■ INFORME</button>
 <button type="button" class="tab">■ ENTIDADES</button>
 <button type="button" class="tab">■ EQUIPO</button>
+<button type="button" class="tab">■ STATS</button>
 <button type="button" class="tab">■ DEV</button>
+<button type="button" class="tab hub-tab hidden">■ THE HUB</button>
 </div>
 <div class="brief">
 <div class="tabpane">
@@ -940,11 +998,28 @@ te devuelve. Máximo 2.</p>
 La batería se gasta encendida y se recarga apagada.</p>
 </div>
 <div class="tabpane hidden">
+<div class="brief-title">■ PROGRESO GUARDADO</div>
+<table class="stats-table">
+<thead>
+<tr><th>NIVEL</th><th>ESTADO</th><th style="text-align:right">MEJOR</th></tr>
+</thead>
+<tbody id="stats-rows"></tbody>
+</table>
+<div class="stats-meta" id="stats-meta"></div>
+</div>
+<div class="tabpane hidden">
 <div class="brief-title">■ CINTA PRIVILEGIADA</div>
 <p>Sujeto inmortal. Vuelo libre hasta el techo<br>
 (ESPACIO sube · C baja). Las entidades te<br>
 persiguen y atacan, pero no pueden matarte.</p>
 <div class="blink dev-cta">▶ INSERTAR CINTA PRIVILEGIADA — DEV</div>
+</div>
+<div class="tabpane hidden">
+<div class="brief-title">■ THE HUB — ACCESO DIRECTO</div>
+<p>Has completado todos los niveles del registro.<br>
+Atajo disponible al <span class="purple">punto de encuentro</span>.</p>
+<button type="button" class="hub-cta" id="hub-cta">▶ IR A THE HUB</button>
+<div class="hub-warn" id="hub-warn"></div>
 </div>
 </div>
 </div>
@@ -3924,6 +3999,181 @@ worldKits.splice(i, 1);
 }
 }
 }
+// ===================== [PROGRESO / LOCALSTORAGE] =====================
+const SAVE_KEY = 'BACKROOMS_SAVE_V1';
+const ALL_LEVELS = [
+{ id: '0', label: 'NIVEL 0 — THE LOBBY' },
+{ id: '2', label: 'NIVEL 2' },
+{ id: '3', label: 'NIVEL 3' },
+{ id: '31', label: 'NIVEL 31' },
+{ id: '31_postblackout', label: 'NIVEL 31 · POST-BLACKOUT' },
+];
+function defaultSave() {
+return {
+shards: {},           // { levelId: totalShardsCollected }
+lives: {},            // { levelId: finalLives }
+levelsCompleted: [],  // ['0', '2', '3', '31', '31_postblackout']
+bestTime: {},         // { levelId: seconds } mejor tiempo de victoria
+lastTime: {},         // { levelId: seconds } último tiempo registrado
+attempts: {},         // { levelId: count }
+deaths: {},           // { levelId: count }
+wins: {},             // { levelId: count }
+hasVisitedHub: false,
+totalAttempts: 0,
+totalDeaths: 0,
+totalWins: 0,
+totalShards: 0,
+lastVisitedAt: null,
+};
+}
+let save = defaultSave();
+function loadSave() {
+try {
+const raw = localStorage.getItem(SAVE_KEY);
+if (!raw) return;
+const parsed = JSON.parse(raw);
+if (parsed && typeof parsed === 'object') {
+save = Object.assign(defaultSave(), parsed);
+for (const k of ['shards', 'lives', 'bestTime', 'lastTime', 'attempts', 'deaths', 'wins']) {
+save[k] = Object.assign({}, save[k] || {});
+}
+if (!Array.isArray(save.levelsCompleted)) save.levelsCompleted = [];
+}
+} catch (_) {
+save = defaultSave();
+}
+}
+function persistSave() {
+try {
+save.lastVisitedAt = new Date().toISOString();
+localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+} catch (_) {}
+}
+function isLevelCompleted(id) {
+return save.levelsCompleted.indexOf(id) !== -1;
+}
+function markLevelCompleted(id, timeSec, livesEnd, shardsEnd) {
+if (isLevelCompleted(id)) {
+if (typeof timeSec === 'number') {
+const t = Math.max(0, Math.floor(timeSec));
+if (typeof save.bestTime[id] !== 'number' || t < save.bestTime[id]) save.bestTime[id] = t;
+save.lastTime[id] = t;
+}
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+if (typeof shardsEnd === 'number') {
+save.shards[id] = Math.max(save.shards[id] || 0, shardsEnd);
+save.totalShards = Object.values(save.shards).reduce((a, b) => a + (b || 0), 0);
+}
+save.wins[id] = (save.wins[id] || 0) + 1;
+save.totalWins++;
+} else {
+save.levelsCompleted.push(id);
+if (typeof timeSec === 'number') {
+save.bestTime[id] = Math.max(0, Math.floor(timeSec));
+save.lastTime[id] = Math.max(0, Math.floor(timeSec));
+}
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+if (typeof shardsEnd === 'number') {
+save.shards[id] = shardsEnd;
+save.totalShards = Object.values(save.shards).reduce((a, b) => a + (b || 0), 0);
+}
+save.wins[id] = 1;
+save.totalWins++;
+}
+persistSave();
+}
+function recordLevelAttempt(id) {
+save.attempts[id] = (save.attempts[id] || 0) + 1;
+save.totalAttempts++;
+persistSave();
+}
+function recordLevelDeath(id, timeSec, livesEnd) {
+save.deaths[id] = (save.deaths[id] || 0) + 1;
+save.totalDeaths++;
+if (typeof timeSec === 'number') save.lastTime[id] = Math.max(0, Math.floor(timeSec));
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+persistSave();
+}
+function allLevelsCompleted() {
+for (const lv of ALL_LEVELS) if (!isLevelCompleted(lv.id)) return false;
+return true;
+}
+function applyUrlState() {
+try {
+const params = new URLSearchParams(location.search);
+if (params.get('hubvisited') === '1' || params.get('from') === 'hub') {
+save.hasVisitedHub = true;
+persistSave();
+}
+const completed = params.get('completed');
+if (completed) {
+const parts = completed.split(',').map(s => s.trim()).filter(Boolean);
+for (const id of parts) {
+if (id && !isLevelCompleted(id)) save.levelsCompleted.push(id);
+}
+persistSave();
+}
+const lvl = params.get('level');
+const t = parseFloat(params.get('time'));
+const sh = parseInt(params.get('shards'), 10);
+const lv = parseInt(params.get('lives'), 10);
+if (lvl && !isNaN(t) && t >= 0) {
+markLevelCompleted(lvl, t, isNaN(lv) ? undefined : lv, isNaN(sh) ? undefined : sh);
+}
+} catch (_) {}
+}
+function formatTime(sec) {
+if (typeof sec !== 'number' || !isFinite(sec)) return '--';
+const s = Math.max(0, Math.floor(sec));
+const m = Math.floor(s / 60);
+const r = s % 60;
+return `${m}:${String(r).padStart(2, '0')}`;
+}
+function refreshStatsUI() {
+const rowsEl = document.getElementById('stats-rows');
+const metaEl = document.getElementById('stats-meta');
+if (!rowsEl || !metaEl) return;
+rowsEl.innerHTML = '';
+for (const lv of ALL_LEVELS) {
+const done = isLevelCompleted(lv.id);
+const best = save.bestTime[lv.id];
+const tr = document.createElement('tr');
+tr.className = done ? 'done' : 'pending';
+const tdL = document.createElement('td');
+tdL.textContent = lv.label;
+const tdS = document.createElement('td');
+tdS.textContent = done ? '✓ PASADO' : '— PENDIENTE';
+const tdT = document.createElement('td');
+tdT.className = 'num';
+tdT.textContent = done ? formatTime(best) : '--';
+tr.appendChild(tdL); tr.appendChild(tdS); tr.appendChild(tdT);
+rowsEl.appendChild(tr);
+}
+const visited = save.lastVisitedAt ? new Date(save.lastVisitedAt).toLocaleString() : '—';
+metaEl.innerHTML =
+`<b>SHARDS TOTALES:</b> ${save.totalShards || 0} &nbsp;·&nbsp; ` +
+`<b>VICTORIAS:</b> ${save.totalWins || 0} &nbsp;·&nbsp; ` +
+`<b>MUERTES:</b> ${save.totalDeaths || 0} &nbsp;·&nbsp; ` +
+`<b>INTENTOS:</b> ${save.totalAttempts || 0}<br>` +
+`<b>ÚLTIMA SESIÓN:</b> ${visited}`;
+}
+function refreshHubUI() {
+const tabBtn = document.querySelector('#start .tab.hub-tab');
+const cta = document.getElementById('hub-cta');
+const warn = document.getElementById('hub-warn');
+if (!tabBtn || !cta) return;
+const allDone = allLevelsCompleted();
+tabBtn.classList.toggle('hidden', !allDone);
+if (save.hasVisitedHub) {
+cta.classList.remove('locked');
+cta.disabled = false;
+if (warn) warn.textContent = '';
+} else {
+cta.classList.add('locked');
+cta.disabled = true;
+if (warn) warn.textContent = '🔒 BLOQUEADO — todavía no visitaste The Hub.';
+}
+}
 // ===================== [ESQUIRLAS] =====================
 const SHARDS_NEEDED = 5;      // ← CAMBIADO DE 3 A 5
 const TOTAL_SHARDS = 10;      // ← CAMBIADO DE 8 A 10 (opcional)
@@ -4076,6 +4326,7 @@ const dx = riftPos.x - player.position.x;
 const dz = riftPos.z - player.position.z;
 camera.rotation.order = 'YXZ';
 camera.rotation.set(0, Math.atan2(-dx, -dz), 0);
+markLevelCompleted('0', Math.floor(playTime), lives, shardCount);
 setTimeout(() => {
 const base = ON_PAGES ? 'level2.html' : GITHUB_PAGES + 'level2.html';
 const extra = Math.max(0, shardCount - SHARDS_NEEDED);
@@ -4137,18 +4388,30 @@ const tabBtns = [...document.querySelectorAll('#start .tab')];
 const tabPanes = [...document.querySelectorAll('#start .tabpane')];
 let tabIdx = 0;
 let tabAuto = null;
+function visibleTabIndices() {
+const out = [];
+tabBtns.forEach((b, j) => { if (!b.classList.contains('hidden')) out.push(j); });
+return out;
+}
 function setTab(i) {
 tabIdx = i;
-tabBtns.forEach((b, j) => b.classList.toggle('on', j === i));
+tabBtns.forEach((b, j) => b.classList.toggle('on', j === i && !b.classList.contains('hidden')));
 tabPanes.forEach((p, j) => p.classList.toggle('hidden', j !== i));
 }
 function stopTabAuto() { if (tabAuto) { clearInterval(tabAuto); tabAuto = null; } }
 tabBtns.forEach((b, i) => b.addEventListener('click', e => {
 e.stopPropagation();
+if (b.classList.contains('hidden')) return;
 stopTabAuto();
 setTab(i);
 }));
-tabAuto = setInterval(() => setTab((tabIdx + 1) % tabPanes.length), 4200);
+tabAuto = setInterval(() => {
+const vis = visibleTabIndices();
+if (vis.length < 2) return;
+const cur = vis.indexOf(tabIdx);
+const next = vis[(cur < 0 ? 0 : cur + 1) % vis.length];
+setTab(next);
+}, 4200);
 let state = 'start';
 let playTime = 0;
 let flickerEvent = 0;
@@ -4663,6 +4926,7 @@ audio.init();
 sfxEntityKill.load();
 sfxStalkerScare.load();
 stopTabAuto();
+recordLevelAttempt('0');
 if (IS_TOUCH) { tryFullscreenLandscape(); enterPlay(); }
 else lockPointer();
 }
@@ -4719,6 +4983,7 @@ state = 'death';
 audio.death();
 post.uniforms.uStatic.value = 1.0;
 survivedEl.textContent = `SOBREVIVISTE ${Math.floor(playTime)} SEGUNDOS`;
+recordLevelDeath('0', Math.floor(playTime), lives);
 if (killer) {
 deathKillerEl.textContent = killer.deathName;
 deathWhyEl.textContent = killer.deathWhy;
@@ -5197,6 +5462,20 @@ heart: heart.playing ? `${heart.cur.bpm.toFixed(0)}bpm` : (heart.dying ? 'dying'
 sfx: `${sfxEntityKill.buffer ? 'buf' : 'no'}/${sfxStalkerScare.buffer ? 'buf' : 'no'}`,
 panic: panicPulse.toFixed(2),
 });
+// ===================== [INIT PROGRESO] =====================
+loadSave();
+applyUrlState();
+refreshStatsUI();
+refreshHubUI();
+const hubCta = document.getElementById('hub-cta');
+if (hubCta) {
+hubCta.addEventListener('click', e => {
+e.stopPropagation();
+if (!allLevelsCompleted() || !save.hasVisitedHub) return;
+const base = ON_PAGES ? 'the-hub.html' : GITHUB_PAGES + 'the-hub.html';
+window.location.href = base;
+});
+}
 loop();
 </script>
 </body>

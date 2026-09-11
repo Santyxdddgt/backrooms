@@ -2616,6 +2616,83 @@ return 'void';
 }
 const envTgt={fog:new THREE.Color(0x150c26),bg:new THREE.Color(0x150c26),density:0.0060,noise:0.18,aberr:0.0035,bloom:0.30,ghost:0.06,dof:0.25,warm:0.45,wash:0};
 const envCur={fog:new THREE.Color(0x150c26),bg:new THREE.Color(0x150c26),density:0.0060,noise:0.18,aberr:0.0035,bloom:0.30,ghost:0.06,dof:0.25,warm:0.45,wash:0};
+/* ========== [PROGRESO / LOCALSTORAGE — BACKROOMS_SAVE_V1] ========== */
+const SAVE_KEY='BACKROOMS_SAVE_V1';
+function defaultSave(){
+return {
+shards:{},lives:{},levelsCompleted:[],
+bestTime:{},lastTime:{},attempts:{},deaths:{},wins:{},
+hasVisitedHub:false,
+totalAttempts:0,totalDeaths:0,totalWins:0,totalShards:0,
+lastVisitedAt:null,
+};
+}
+let save=defaultSave();
+function loadSave(){
+try{
+const raw=localStorage.getItem(SAVE_KEY);
+if(!raw)return;
+const parsed=JSON.parse(raw);
+if(parsed&&typeof parsed==='object'){
+save=Object.assign(defaultSave(),parsed);
+for(const k of ['shards','lives','bestTime','lastTime','attempts','deaths','wins']){
+save[k]=Object.assign({},save[k]||{});
+}
+if(!Array.isArray(save.levelsCompleted))save.levelsCompleted=[];
+}
+}catch(_){
+save=defaultSave();
+}
+}
+function persistSave(){
+try{
+save.lastVisitedAt=new Date().toISOString();
+localStorage.setItem(SAVE_KEY,JSON.stringify(save));
+}catch(_){}
+}
+function isLevelCompleted(id){return save.levelsCompleted.indexOf(id)!==-1;}
+function markLevelCompleted(id,timeSec,livesEnd,shardsEnd){
+if(isLevelCompleted(id)){
+if(typeof timeSec==='number'){
+const t=Math.max(0,Math.floor(timeSec));
+if(typeof save.bestTime[id]!=='number'||t<save.bestTime[id])save.bestTime[id]=t;
+save.lastTime[id]=t;
+}
+if(typeof livesEnd==='number')save.lives[id]=livesEnd;
+if(typeof shardsEnd==='number'){
+save.shards[id]=Math.max(save.shards[id]||0,shardsEnd);
+save.totalShards=Object.values(save.shards).reduce((a,b)=>a+(b||0),0);
+}
+save.wins[id]=(save.wins[id]||0)+1;
+save.totalWins++;
+}else{
+save.levelsCompleted.push(id);
+if(typeof timeSec==='number'){
+save.bestTime[id]=Math.max(0,Math.floor(timeSec));
+save.lastTime[id]=Math.max(0,Math.floor(timeSec));
+}
+if(typeof livesEnd==='number')save.lives[id]=livesEnd;
+if(typeof shardsEnd==='number'){
+save.shards[id]=shardsEnd;
+save.totalShards=Object.values(save.shards).reduce((a,b)=>a+(b||0),0);
+}
+save.wins[id]=1;
+save.totalWins++;
+}
+persistSave();
+}
+function recordLevelAttempt(id){
+save.attempts[id]=(save.attempts[id]||0)+1;
+save.totalAttempts++;
+persistSave();
+}
+function recordLevelDeath(id,timeSec,livesEnd){
+save.deaths[id]=(save.deaths[id]||0)+1;
+save.totalDeaths++;
+if(typeof timeSec==='number')save.lastTime[id]=Math.max(0,Math.floor(timeSec));
+if(typeof livesEnd==='number')save.lives[id]=livesEnd;
+persistSave();
+}
 /* ========== 09 · ESTADO ========== */
 const pos=new THREE.Vector3(0,EYE,60);
 const vel=new THREE.Vector3();
@@ -2640,6 +2717,8 @@ let state='play';
 let dead=false;
 const GITHUB_PAGES='https://santyxdddgt.github.io/backrooms/';
 const ON_PAGES=location.hostname==='santyxdddgt.github.io';
+/* ========== [INIT PROGRESO] ========== */
+loadSave();
 function sagaSeconds(){return timeBase+(started?(performance.now()-startTime)/1000:0);}
 function realitySnap(){
 for(let i=0;i<3;i++){
@@ -2821,6 +2900,7 @@ AudioFX.start();
 sfxEntityKill.load();
 heart.start();
 heart.setDying(false);
+recordLevelAttempt('3');
 started=true;
 startTime=performance.now();
 document.body.classList.add('playing');
@@ -3312,6 +3392,7 @@ AudioFX.complete();
 fadeWt=1;
 announce('THE HUB','el sueño te escupe al punto de encuentro');
 setTimeout(async function(){
+markLevelCompleted('3', Math.floor(sagaSeconds()), Math.max(1, lives), extraShards);
 const out=new URLSearchParams({lives:Math.max(1,lives),time:Math.floor(sagaSeconds()),shards:extraShards});
 const query='?'+out.toString();
 const localTarget='the-hub.html';
@@ -3538,6 +3619,7 @@ bloodEl.classList.remove('show');panicRedEl.style.opacity='0';
 heart.setDying(false);
 camera.fov=72;camera.updateProjectionMatrix();
 if(doDeath){
+recordLevelDeath('3', Math.floor(sagaSeconds()), Math.max(0, lives));
 dead=true;started=false;state='dead';
 heart.stop(0.4);
 chaseMusic.stop(0.3);

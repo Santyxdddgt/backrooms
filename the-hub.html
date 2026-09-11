@@ -44,6 +44,23 @@ padding:1.1rem 1.6rem;text-align:left;font-size:0.85rem;line-height:1.7;letter-s
 .controls span{border:1px solid rgba(207,194,122,0.5);padding:0.15em 0.5em;font-weight:bold}
 .blink{font-size:1.05rem;letter-spacing:0.3em;animation:blink 1.2s infinite steps(1)}
 @keyframes blink{50%{opacity:0}}
+/* ---------- STATS / SAVE (estilo terminal VHS) ---------- */
+.statsBox{max-width:32rem;width:100%;margin-top:0.6rem;border:1px solid rgba(207,194,122,0.35);
+background:rgba(10,8,2,0.78);padding:0.9rem 1.2rem;font-size:0.82rem;letter-spacing:0.06em;line-height:1.55;
+color:#cfc27a;font-family:"VT323","Courier New",monospace;box-sizing:border-box}
+.statsTitle{color:#e8dc96;letter-spacing:0.25em;font-weight:bold;margin-bottom:0.4em;text-align:center;
+border-bottom:1px dashed rgba(207,194,122,0.3);padding-bottom:0.35em}
+.statsTable{width:100%;border-collapse:collapse;margin:0.4em 0 0.6em}
+.statsTable th,.statsTable td{padding:0.18em 0.45em;border-bottom:1px solid rgba(207,194,122,0.12);
+text-align:left;font-weight:normal;font-size:0.82rem}
+.statsTable th{color:#e8dc96;letter-spacing:0.18em;font-size:0.72rem;opacity:0.85}
+.statsTable tr.done td:nth-child(2){color:#7dff9a}
+.statsTable tr.pending td:nth-child(2){color:#ff8a7a}
+.statsTable td:nth-child(3){color:#cfeef5;font-family:"VT323","Courier New",monospace;text-align:right}
+.statsGrid{display:grid;grid-template-columns:1fr 1fr;gap:0.4em 0.9em;margin-top:0.4em;font-size:0.78rem}
+.statsGrid div span{color:#e8dc96;letter-spacing:0.18em;margin-right:0.4em;opacity:0.9}
+.statsGrid div b{color:#cfeef5;font-weight:normal;font-family:"VT323","Courier New",monospace}
+.statsNote{margin-top:0.6em;font-size:0.72rem;color:rgba(207,194,122,0.55);letter-spacing:0.18em;text-align:center}
 /* ---------- HUD ---------- */
 #hud{position:absolute;inset:0;z-index:5;pointer-events:none;color:#e8e0c0;
 text-shadow:1px 1px 1px rgba(0,0,0,0.8);font-family:"VT323","Courier New",monospace;
@@ -162,6 +179,15 @@ MAR. 07 1991</div>
 <p>Recoge <span class="purple">◆ ESQUIRLAS DE REALIDAD</span>, salta el peldaño y métete en la grieta que quieras.</p>
 </div>
 <div class="controls" id="ctrl-line"><span>W A S D</span> MOVERSE · <span>SHIFT</span> CORRER · <span>ESPACIO</span> SALTAR · <span>RATÓN</span> MIRAR · <span>ESC</span> PAUSA</div>
+<div class="statsBox" id="statsBox">
+<div class="statsTitle">■ REGISTRO DE PROGRESO · BACKROOMS_SAVE_V1</div>
+<table class="statsTable" id="statsTable">
+<thead><tr><th>NIVEL</th><th>ESTADO</th><th>MEJOR TIEMPO</th></tr></thead>
+<tbody id="statsRows"></tbody>
+</table>
+<div class="statsGrid" id="statsGrid"></div>
+<div class="statsNote" id="statsNote">— ÚLTIMA SESIÓN: —</div>
+</div>
 <div class="blink" id="start-cta">▶ INSERTAR CINTA — CLIC PARA REPRODUCIR</div>
 </div>
 <div id="pause" class="overlay hidden">
@@ -177,6 +203,179 @@ var W=10.5, WALL_H=8.5, RY=6.0;
 var CW=2.2, CH=0.45;
 var LEN=760, DS=4, N=Math.floor(LEN/DS);
 var EYE=1.68;
+/* ============ [PROGRESO / LOCALSTORAGE — BACKROOMS_SAVE_V1] ============ */
+var SAVE_KEY = 'BACKROOMS_SAVE_V1';
+var HUB_LEVELS = [
+{ id: '0',         label: 'NIVEL 0 — THE LOBBY' },
+{ id: '2',         label: 'NIVEL 2 — PIPE DREAMS' },
+{ id: '3',         label: 'NIVEL 3 — ERROR 404' },
+{ id: '31',        label: 'NIVEL 31 — ROLLER RINK' },
+{ id: '31_post',   label: 'NIVEL 31 — POST-BLACKOUT' },
+];
+function defaultSave() {
+return {
+shards: {},           // { levelId: totalShardsCollected }
+lives: {},            // { levelId: finalLives }
+levelsCompleted: [],  // ['0', '2', '3', '31', '31_post']
+bestTime: {},         // { levelId: seconds } mejor tiempo de victoria
+lastTime: {},         // { levelId: seconds } último tiempo registrado
+attempts: {},         // { levelId: count }
+deaths: {},           // { levelId: count }
+wins: {},             // { levelId: count }
+hasVisitedHub: false,
+totalAttempts: 0,
+totalDeaths: 0,
+totalWins: 0,
+totalShards: 0,
+lastVisitedAt: null,
+lastSession: null,
+};
+}
+var save = defaultSave();
+function loadSave() {
+try {
+var raw = localStorage.getItem(SAVE_KEY);
+if (!raw) return;
+var parsed = JSON.parse(raw);
+if (parsed && typeof parsed === 'object') {
+save = Object.assign(defaultSave(), parsed);
+for (var k of ['shards','lives','bestTime','lastTime','attempts','deaths','wins']) {
+save[k] = Object.assign({}, save[k] || {});
+}
+if (!Array.isArray(save.levelsCompleted)) save.levelsCompleted = [];
+}
+} catch (_) {
+save = defaultSave();
+}
+}
+function persistSave() {
+try {
+save.lastVisitedAt = new Date().toISOString();
+save.lastSession = save.lastVisitedAt;
+localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+} catch (_) {}
+}
+function isLevelCompleted(id) { return save.levelsCompleted.indexOf(id) !== -1; }
+function markLevelCompleted(id, timeSec, livesEnd, shardsEnd) {
+if (isLevelCompleted(id)) {
+if (typeof timeSec === 'number') {
+var t = Math.max(0, Math.floor(timeSec));
+if (typeof save.bestTime[id] !== 'number' || t < save.bestTime[id]) save.bestTime[id] = t;
+save.lastTime[id] = t;
+}
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+if (typeof shardsEnd === 'number') {
+save.shards[id] = Math.max(save.shards[id] || 0, shardsEnd);
+save.totalShards = Object.values(save.shards).reduce(function(a,b){return a+(b||0);},0);
+}
+save.wins[id] = (save.wins[id] || 0) + 1;
+save.totalWins++;
+} else {
+save.levelsCompleted.push(id);
+if (typeof timeSec === 'number') {
+save.bestTime[id] = Math.max(0, Math.floor(timeSec));
+save.lastTime[id] = Math.max(0, Math.floor(timeSec));
+}
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+if (typeof shardsEnd === 'number') {
+save.shards[id] = shardsEnd;
+save.totalShards = Object.values(save.shards).reduce(function(a,b){return a+(b||0);},0);
+}
+save.wins[id] = 1;
+save.totalWins++;
+}
+persistSave();
+}
+function recordLevelAttempt(id) {
+save.attempts[id] = (save.attempts[id] || 0) + 1;
+save.totalAttempts++;
+persistSave();
+}
+function recordLevelDeath(id, timeSec, livesEnd) {
+save.deaths[id] = (save.deaths[id] || 0) + 1;
+save.totalDeaths++;
+if (typeof timeSec === 'number') save.lastTime[id] = Math.max(0, Math.floor(timeSec));
+if (typeof livesEnd === 'number') save.lives[id] = livesEnd;
+persistSave();
+}
+/* [HUB] applyUrlState — sincroniza datos recibidos por URL al save */
+function applyUrlState() {
+try {
+var params = new URLSearchParams(location.search);
+save.hasVisitedHub = true;
+var completed = params.get('completed');
+if (completed) {
+var parts = completed.split(',');
+for (var i = 0; i < parts.length; i++) {
+var id = (parts[i] || '').trim();
+if (id && save.levelsCompleted.indexOf(id) === -1) save.levelsCompleted.push(id);
+}
+}
+var lvl = params.get('level');
+var t = parseFloat(params.get('time'));
+var lv = parseInt(params.get('lives'), 10);
+var sh = parseInt(params.get('shards'), 10);
+if (lvl && !isNaN(t) && t >= 0) {
+markLevelCompleted(lvl, t, isNaN(lv) ? undefined : lv, isNaN(sh) ? undefined : sh);
+}
+} catch (_) {}
+}
+/* ============ [INIT PROGRESO] ============ */
+loadSave();
+applyUrlState();
+save.hasVisitedHub = true;
+persistSave();
+/* ============ STATS / UI ============ */
+function formatTime(sec){
+if (typeof sec !== 'number' || !isFinite(sec) || sec < 0) return '--';
+var m = Math.floor(sec/60), s = Math.floor(sec%60);
+return m + ':' + String(s).padStart(2,'0');
+}
+function formatDate(iso){
+if (!iso) return '--';
+try {
+var d = new Date(iso);
+if (isNaN(d.getTime())) return '--';
+var pad = function(n){return String(n).padStart(2,'0');};
+return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+
+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+} catch (_) { return '--'; }
+}
+function sumObject(obj){
+var total = 0;
+for (var k in obj) if (obj.hasOwnProperty(k) && typeof obj[k] === 'number') total += obj[k];
+return total;
+}
+function renderStats(){
+var rowsEl = document.getElementById('statsRows');
+var gridEl = document.getElementById('statsGrid');
+var noteEl = document.getElementById('statsNote');
+if (!rowsEl || !gridEl || !noteEl) return;
+var html = '';
+for (var i = 0; i < HUB_LEVELS.length; i++) {
+var lv = HUB_LEVELS[i];
+var done = isLevelCompleted(lv.id);
+var best = save.bestTime[lv.id];
+html += '<tr class="'+(done?'done':'pending')+'">'
++ '<td>'+lv.label+'</td>'
++ '<td>'+(done?'\u2714 PASADO':'PENDIENTE')+'</td>'
++ '<td>'+(best!=null?formatTime(best):'--')+'</td>'
++ '</tr>';
+}
+rowsEl.innerHTML = html;
+var totalShards = save.totalShards || sumObject(save.shards);
+var totalWins = save.totalWins || (save.levelsCompleted ? save.levelsCompleted.length : 0);
+var totalDeaths = save.totalDeaths || sumObject(save.deaths);
+var totalAttempts = save.totalAttempts || sumObject(save.attempts);
+var lastSession = save.lastSession || save.lastVisitedAt || new Date().toISOString();
+gridEl.innerHTML =
+'<div><span>SHARDS TOTALES:</span><b>'+totalShards+'</b></div>'
++'<div><span>VICTORIAS:</span><b>'+totalWins+' / '+HUB_LEVELS.length+'</b></div>'
++'<div><span>MUERTES TOTALES:</span><b>'+totalDeaths+'</b></div>'
++'<div><span>INTENTOS TOTALES:</span><b>'+totalAttempts+'</b></div>';
+noteEl.textContent = '\u2014 \u00DALTIMA SESI\u00D3N: ' + formatDate(lastSession) + ' \u2014';
+}
+renderStats();
 /* ============ SALTO ============ */
 var JUMP_VEL=6.5, GRAVITY=14.0;
 var jumpY=0, vy=0, grounded=true, jumpQueued=false;
@@ -1139,6 +1338,11 @@ if(Math.hypot(player.x-s.x,player.z-s.z)<1.0){
 s.collected=true;s.grp.visible=false;
 shardCount++;updateShardHud();
 audio.shardPickup();
+/* [HUB] Sincronizar shards recolectados en el Hub con el save global */
+save.shards['hub'] = (save.shards['hub'] || 0) + 1;
+save.totalShards = Object.values(save.shards).reduce(function(a,b){return a+(b||0);},0);
+save.lastSession = new Date().toISOString();
+persistSave();
 if(shardCount<SHARDS_NEEDED)toast('ESQUIRLA '+shardCount+'/'+SHARDS_NEEDED+' — LA REALIDAD SE RESQUEBRAJA');
 else if(shardCount===SHARDS_NEEDED)toast('◆ 3/3 — LAS GRIETAS PARPADEAN MÁS FUERTE');
 else toast('ESQUIRLA '+shardCount+' — SOBRA');
@@ -1157,7 +1361,14 @@ fadeEl.style.opacity=1;
 setTimeout(function(){
 if(!ro.rd.file)return;
 var base=ON_PAGES?ro.rd.file:GH_PAGES+ro.rd.file;
-var params='?time='+Math.floor(hubTime)+'&shards='+shardCount+'&lives=1';
+/* [HUB] Pasar parámetros de progreso + identificación del nivel al que se entra */
+var levelMap={level0:'0',level2:'2',error404:'3',roller:'31'};
+var levelId=levelMap[ro.rd.type]||ro.rd.type||'';
+var livesFromSave=(levelId && typeof save.lives[levelId]==='number')?save.lives[levelId]:1;
+var params='?time='+Math.floor(hubTime)
++'&shards='+shardCount
++'&lives='+Math.max(1,livesFromSave)
++(levelId?'&level='+levelId:'');
 window.location.replace(base+params);
 },1400);
 }

@@ -16,7 +16,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1208;overscroll-beh
 /* ---------- overlays (inicio/pausa) ---------- */
 .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
 gap:1.1rem;color:#cfc27a;text-align:center;z-index:10;cursor:pointer;background:rgba(0,0,0,0.78);
-text-shadow:2px 0 rgba(255,0,60,0.35),-2px 0 rgba(0,200,255,0.35);overflow-y:auto;padding:2rem 1rem;touch-action:pan-y;
+text-shadow:2px 0 rgba(255,0,60,0.35),-2px 0 rgba(0,200,255,0.35);overflow:auto;padding:2rem 1rem;touch-action:auto;
 font-family:"VT323","Courier New",monospace}
 #start{cursor:default;padding:0.7rem 0.9rem 1rem;background:rgba(10,9,3,0.58);justify-content:flex-start}
 #start .blink{cursor:pointer}
@@ -131,8 +131,8 @@ overflow:hidden;pointer-events:none;border-radius:0 0 3px 3px}
 background:linear-gradient(to right,rgba(255,60,60,0.85),rgba(207,194,122,0.85));
 box-shadow:0 0 6px rgba(255,90,90,0.5);transition:none}
 .tab-progress.run::before{transition:width 8s linear;width:100%}
-.hub-brief{max-height:54vh;overflow-y:auto;touch-action:pan-y;
-padding:0.85rem 1.05rem;font-size:0.82rem;line-height:1.65}
+.hub-brief{max-height:54vh;overflow:auto;touch-action:auto;
+padding:0.85rem 1.05rem;font-size:0.82rem;line-height:1.65;overflow-x:hidden}
 .tabpane p{margin-bottom:0.5em}
 .tabpane p:last-child{margin-bottom:0}
 .kbd{font-family:"VT323","Courier New",monospace;border:1px solid rgba(207,194,122,0.45);
@@ -170,6 +170,7 @@ text-shadow:0 0 6px rgba(125,255,154,0.4)}
 .start-left{align-items:center;text-align:center}
 .start-left .sub{text-align:center}
 .hub-quick{justify-content:center}
+.crack-list{grid-template-columns:1fr}
 }
 /* responsive: landscape con poca altura (celular horizontal / ventana baja) */
 @media (orientation: landscape) and (max-height:480px){

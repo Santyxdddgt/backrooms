@@ -18,7 +18,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1208;overscroll-beh
 gap:1.1rem;color:#cfc27a;text-align:center;z-index:10;cursor:pointer;background:rgba(0,0,0,0.78);
 text-shadow:2px 0 rgba(255,0,60,0.35),-2px 0 rgba(0,200,255,0.35);overflow-y:auto;padding:2rem 1rem;touch-action:pan-y;
 font-family:"VT323","Courier New",monospace}
-#start{cursor:default}
+#start{cursor:default;padding:1rem 0.9rem;background:rgba(10,9,3,0.58);justify-content:flex-start}
 #start .blink{cursor:pointer}
 .vhs-bg::before{content:"";position:fixed;inset:0;pointer-events:none;
 background:repeating-linear-gradient(to bottom,rgba(255,255,255,0.035) 0px,rgba(255,255,255,0.035) 1px,transparent 2px,transparent 4px);
@@ -61,6 +61,89 @@ text-align:left;font-weight:normal;font-size:0.82rem}
 .statsGrid div span{color:#e8dc96;letter-spacing:0.18em;margin-right:0.4em;opacity:0.9}
 .statsGrid div b{color:#cfeef5;font-weight:normal;font-family:"VT323","Courier New",monospace}
 .statsNote{margin-top:0.6em;font-size:0.72rem;color:rgba(207,194,122,0.55);letter-spacing:0.18em;text-align:center}
+/* ---------- MENU PRINCIPAL: layout por pestañas (basado en index.html) ---------- */
+.start-wrap{position:relative;z-index:1;margin:auto;display:grid;
+grid-template-columns:minmax(200px,32%) minmax(280px,1fr);gap:0.9rem 1.4rem;align-items:start;
+width:min(58rem,100%);max-height:100%}
+.start-left{display:flex;flex-direction:column;align-items:flex-start;gap:0.6rem;min-width:0}
+.start-left .sub{font-size:0.74rem;letter-spacing:0.3em;text-align:left;line-height:1.5}
+.hub-title{font-size:clamp(1.7rem,4.8vw,3.4rem);letter-spacing:0.16em;line-height:1;margin:0.1em 0}
+.hub-quick{display:flex;align-items:center;gap:0.5em;font-size:0.7rem;letter-spacing:0.22em;opacity:0.85;margin-top:0.2em}
+.hub-rec{color:#ff3a3a;text-shadow:0 0 8px rgba(255,60,60,0.55);animation:blink 1.6s infinite steps(1)}
+.hub-quick-sep{opacity:0.45}
+.hub-start-cta{border:1px solid rgba(207,194,122,0.55);background:rgba(20,18,6,0.55);
+padding:0.5em 1em;font-size:0.85rem;margin-top:0.4em}
+.start-right{display:flex;flex-direction:column;min-width:0;width:100%}
+.tabs{position:relative;display:flex;gap:0.3rem;flex-wrap:wrap}
+.tab{font-family:inherit;font-size:0.66rem;letter-spacing:0.2em;color:#9a8f62;background:rgba(18,16,6,0.78);
+border:1px solid rgba(207,194,122,0.32);border-bottom:none;border-radius:3px 3px 0 0;
+padding:0.45em 0.78em 0.38em;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+transition:color .15s,background .15s,border-color .15s}
+.tab:hover,.tab:focus-visible{color:#cfc27a;border-color:rgba(207,194,122,0.6)}
+.tab.on{color:#e8dc96;background:rgba(30,27,11,0.92);border-color:rgba(207,194,122,0.78);
+text-shadow:0 0 6px rgba(232,220,150,0.4)}
+/* REC dot en pestaña activa (mejora propia: cinta "reproduciendo") */
+.tab.on::after{content:"●";color:#ff3a3a;margin-left:0.45em;font-size:0.7em;
+text-shadow:0 0 6px rgba(255,60,60,0.6);animation:blink 1.4s infinite steps(1);vertical-align:middle}
+/* progress bar de auto-rotación de cinta (mejora propia) */
+.tab-progress{position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(207,194,122,0.18);
+overflow:hidden;pointer-events:none;border-radius:0 0 3px 3px}
+.tab-progress::before{content:"";position:absolute;left:0;top:0;height:100%;width:0;
+background:linear-gradient(to right,rgba(255,60,60,0.85),rgba(207,194,122,0.85));
+box-shadow:0 0 6px rgba(255,90,90,0.5);transition:none}
+.tab-progress.run::before{transition:width 8s linear;width:100%}
+.hub-brief{max-height:54vh;overflow-y:auto;touch-action:pan-y;
+padding:0.85rem 1.05rem;font-size:0.82rem;line-height:1.65}
+.tabpane p{margin-bottom:0.5em}
+.tabpane p:last-child{margin-bottom:0}
+.kbd{font-family:"VT323","Courier New",monospace;border:1px solid rgba(207,194,122,0.45);
+padding:0.05em 0.4em;font-size:0.92em;letter-spacing:0.08em;color:#e8dc96;background:rgba(20,18,6,0.55)}
+/* ---- grietas interactivas ---- */
+.crack-list{display:grid;grid-template-columns:1fr 1fr;gap:0.45rem;margin:0.6em 0 0.4em}
+.crack{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0.55em;
+padding:0.5em 0.7em;font-family:inherit;font-size:0.78rem;letter-spacing:0.08em;
+background:rgba(20,18,6,0.62);border:1px solid rgba(207,194,122,0.32);
+color:#cfc27a;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;
+transition:background .15s,border-color .15s,transform .15s}
+.crack:hover,.crack:focus-visible{background:rgba(40,34,14,0.78);border-color:rgba(207,194,122,0.7)}
+.crack.flash{animation:crackFlash 0.9s ease-out 1}
+@keyframes crackFlash{0%{transform:scale(1);box-shadow:none}30%{transform:scale(1.04);
+box-shadow:0 0 22px var(--crack-glow)}100%{transform:scale(1);box-shadow:none}}
+.crack-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.crack-yellow .crack-dot{background:#ffe08a;box-shadow:0 0 8px #ffe08a}
+.crack-cyan   .crack-dot{background:#6ad8ff;box-shadow:0 0 8px #6ad8ff}
+.crack-red    .crack-dot{background:#ff5449;box-shadow:0 0 8px #ff5449}
+.crack-pink   .crack-dot{background:#ff6ec7;box-shadow:0 0 8px #ff6ec7}
+.crack-yellow{--crack-glow:rgba(255,224,138,0.85)}
+.crack-cyan{--crack-glow:rgba(106,216,255,0.85)}
+.crack-red{--crack-glow:rgba(255,84,73,0.85)}
+.crack-pink{--crack-glow:rgba(255,110,199,0.85)}
+.crack-name{font-weight:bold;letter-spacing:0.12em}
+.crack-state{font-size:0.66rem;letter-spacing:0.22em;opacity:0.85;padding:0.1em 0.45em;
+border:1px solid rgba(207,194,122,0.3);border-radius:2px;background:rgba(10,8,2,0.6)}
+.crack-state.done{color:#7dff9a;border-color:rgba(125,255,154,0.55);
+text-shadow:0 0 6px rgba(125,255,154,0.4)}
+.crack-state.pending{color:#ff8a7a;border-color:rgba(255,138,122,0.35)}
+.crack-hint{margin-top:0.4em;font-size:0.72rem;letter-spacing:0.1em;opacity:0.7}
+/* responsive: portrait (móvil) */
+@media (orientation: portrait){
+.start-wrap{grid-template-columns:1fr;max-width:26rem;gap:1rem}
+.start-left{align-items:center;text-align:center}
+.start-left .sub{text-align:center}
+.hub-quick{justify-content:center}
+}
+/* responsive: landscape con poca altura (celular horizontal / ventana baja) */
+@media (orientation: landscape) and (max-height:480px){
+.start-wrap{gap:0.5rem 1.1rem}
+.start-left{gap:0.35rem}
+.hub-title{font-size:clamp(1.4rem,7vh,2.4rem)}
+.tape-label{font-size:0.6rem;padding:0.2em 0.7em}
+.start-left .sub{font-size:0.62rem;letter-spacing:0.22em}
+.controls{font-size:0.66rem}
+.hub-brief{max-height:60vh;font-size:0.74rem;padding:0.55rem 0.8rem;line-height:1.5}
+.tab{font-size:0.58rem;padding:0.32em 0.6em 0.28em}
+.hub-start-cta{font-size:0.72rem;padding:0.35em 0.8em}
+}
 /* ---------- HUD ---------- */
 #hud{position:absolute;inset:0;z-index:5;pointer-events:none;color:#e8e0c0;
 text-shadow:1px 1px 1px rgba(0,0,0,0.8);font-family:"VT323","Courier New",monospace;
@@ -167,28 +250,70 @@ text-shadow:1.5px 0 rgba(255,60,60,.55),-1.5px 0 rgba(60,255,220,.55)}
 MAR. 07 1991</div>
 <div id="start" class="overlay vhs-bg">
 <div class="trackbar"></div>
+<div class="start-wrap">
+<div class="start-left">
 <div class="tape-label">CINTA #07 — NEXO RECUPERADO — NO DISTRIBUIR</div>
-<h1>THE HUB</h1>
+<h1 class="hub-title">THE HUB</h1>
 <div class="sub">NEXO SUBTERRÁNEO — REGISTRO DE CÁMARA CORPORAL</div>
-<div class="brief">
+<div class="controls" id="ctrl-line"><span>W A S D</span> MOVERSE · <span>SHIFT</span> CORRER · <span>ESPACIO</span> SALTAR · <span>RATÓN</span> MIRAR · <span>ESC</span> PAUSA</div>
+<div class="hub-quick">
+<span class="hub-rec">● REC</span>
+<span class="hub-quick-sep">·</span>
+<span id="hub-tabs-hint">◀ PESTAÑAS ▶</span>
+</div>
+<div class="blink hub-start-cta" id="start-cta">▶ INSERTAR CINTA — CLIC PARA REPRODUCIR</div>
+</div>
+<div class="start-right">
+<div class="tabs" id="start-tabs">
+<button type="button" class="tab on" data-tab="0">■ INFORME</button>
+<button type="button" class="tab" data-tab="1">■ GRIETAS</button>
+<button type="button" class="tab" data-tab="2">■ CONTROLES</button>
+<button type="button" class="tab" data-tab="3">■ STATS</button>
+<span class="tab-progress" id="tab-progress"></span>
+</div>
+<div class="brief hub-brief">
+<div class="tabpane">
 <div class="brief-title">■ INFORME DE NEXO</div>
 <p>Complejo subterráneo de túneles de hormigón, nexo entre los niveles de los Backrooms. Autovía subterránea con calzada central. Zona segura: sin entidades registradas.</p>
-<div class="brief-title">■ GRIETAS DIMENSIONALES</div>
-<p>Cuatro fracturas activas se abren en las paredes. Cada una exige un salto sobre su peldaño para cruzar. <span class="yellow">◆ The Lobby</span> emite una luz enferma y un rugido bajo. <span class="cyan">◆ Pipe Dreams</span> ríe en la oscuridad. <span class="red">◆ My Dearly Fragmented</span> escupe fallos. <span class="pink">◆ Roller Rink</span> (Nivel 31): pop amortiguado, luces de disco y olor a pizza barata.</p>
 <div class="brief-title">■ OBJETIVO</div>
 <p>Recoge <span class="purple">◆ ESQUIRLAS DE REALIDAD</span>, salta el peldaño y métete en la grieta que quieras.</p>
+<div class="brief-title">■ SALIDA</div>
+<p>Cuando tengas <strong>todas</strong> las esquirlas, las cuatro grietas se estabilizan a la vez. Solo queda elegir.</p>
 </div>
-<div class="controls" id="ctrl-line"><span>W A S D</span> MOVERSE · <span>SHIFT</span> CORRER · <span>ESPACIO</span> SALTAR · <span>RATÓN</span> MIRAR · <span>ESC</span> PAUSA</div>
-<div class="statsBox" id="statsBox">
-<div class="statsTitle">■ REGISTRO DE PROGRESO · BACKROOMS_SAVE_V1</div>
-<table class="statsTable" id="statsTable">
+<div class="tabpane hidden">
+<div class="brief-title">■ GRIETAS DIMENSIONALES</div>
+<p>Cuatro fracturas activas se abren en las paredes. Cada una exige un salto sobre su peldaño para cruzar.</p>
+<div class="crack-list">
+<button type="button" class="crack crack-yellow" data-crack="0"><span class="crack-dot"></span><span class="crack-name">◆ The Lobby</span><span class="crack-state" data-state="0">PENDIENTE</span></button>
+<button type="button" class="crack crack-cyan"   data-crack="1"><span class="crack-dot"></span><span class="crack-name">◆ Pipe Dreams</span><span class="crack-state" data-state="1">PENDIENTE</span></button>
+<button type="button" class="crack crack-red"    data-crack="2"><span class="crack-dot"></span><span class="crack-name">◆ My Dearly Fragmented</span><span class="crack-state" data-state="2">PENDIENTE</span></button>
+<button type="button" class="crack crack-pink"   data-crack="3"><span class="crack-dot"></span><span class="crack-name">◆ Roller Rink (Nivel 31)</span><span class="crack-state" data-state="3">PENDIENTE</span></button>
+</div>
+<p class="crack-hint">Toca una grieta para iluminarla. El color y el estado se sincronizan con tu partida guardada.</p>
+</div>
+<div class="tabpane hidden">
+<div class="brief-title">■ CONTROLES</div>
+<p><span class="kbd">W A S D</span> — moverse por el nexo.</p>
+<p><span class="kbd">SHIFT</span> — correr (consume estamina).</p>
+<p><span class="kbd">ESPACIO</span> — saltar el peldaño y cruzar la grieta.</p>
+<p><span class="kbd">RATÓN</span> — mirar alrededor.</p>
+<p><span class="kbd">ESC</span> — pausa.</p>
+<p><span class="kbd">F</span> — lintera del nexo (cuando esté disponible).</p>
+<div class="brief-title">■ TOUCH (MÓVIL)</div>
+<p>Joystick a la izquierda para mover · arrastra a la derecha para mirar · <span class="kbd">⚡</span> correr · <span class="kbd">⤒</span> saltar · <span class="kbd">❚❚</span> pausa.</p>
+</div>
+<div class="tabpane hidden">
+<div class="brief-title">■ REGISTRO DE PROGRESO · BACKROOMS_SAVE_V1</div>
+<table class="statsTable">
 <thead><tr><th>NIVEL</th><th>ESTADO</th><th>MEJOR TIEMPO</th></tr></thead>
 <tbody id="statsRows"></tbody>
 </table>
 <div class="statsGrid" id="statsGrid"></div>
 <div class="statsNote" id="statsNote">— ÚLTIMA SESIÓN: —</div>
 </div>
-<div class="blink" id="start-cta">▶ INSERTAR CINTA — CLIC PARA REPRODUCIR</div>
+</div>
+</div>
+</div>
 </div>
 <div id="pause" class="overlay hidden">
 <h1>❚❚ PAUSA</h1>
@@ -1161,6 +1286,83 @@ document.addEventListener('keydown',unlockMenuAudio);
 document.addEventListener('touchstart',unlockMenuAudio,{passive:true});
 var canvas=renderer.domElement;
 function lockPointer(){canvas.requestPointerLock();}
+/* ============ MENÚ PRINCIPAL: PESTAÑAS + AUTO-ROTACIÓN DE CINTA (mejora propia) ============ */
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('#start-tabs .tab'));
+  var panes=[].slice.call(document.querySelectorAll('#start .tabpane'));
+  var progress=document.getElementById('tab-progress');
+  var AUTO_MS=8000, activeIdx=0, paused=false, autoTimer=null;
+  function setTab(i,manual){
+    if(!tabs.length) return;
+    i=((i%tabs.length)+tabs.length)%tabs.length;
+    if(i===activeIdx && !manual) return;
+    activeIdx=i;
+    tabs.forEach(function(b,j){b.classList.toggle('on',j===i);});
+    panes.forEach(function(p,j){p.classList.toggle('hidden',j!==i);});
+    restartAuto();
+  }
+  function stopAuto(){
+    if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}
+    if(progress) progress.classList.remove('run');
+  }
+  function restartAuto(){
+    stopAuto();
+    if(paused || state!=='start') return;
+    if(!progress) return;
+    progress.classList.remove('run');
+    void progress.offsetWidth;
+    progress.classList.add('run');
+    autoTimer=setTimeout(function(){setTab(activeIdx+1);},AUTO_MS);
+  }
+  function pauseAuto(){paused=true;stopAuto();}
+  function resumeAuto(){paused=false;if(state==='start')restartAuto();}
+  tabs.forEach(function(b,i){
+    b.addEventListener('click',function(e){e.stopPropagation();setTab(i,true);});
+  });
+  var tabsEl=document.getElementById('start-tabs');
+  ['pointerenter','pointerover','focusin','touchstart'].forEach(function(ev){
+    tabsEl.addEventListener(ev,pauseAuto,true);
+  });
+  tabsEl.addEventListener('pointerleave',resumeAuto);
+  startScreen.addEventListener('pointerdown',function(e){
+    if(e.target.closest('#start-tabs')) return;
+    resumeAuto();
+  });
+  document.addEventListener('keydown',function(e){
+    if(state!=='start') return;
+    if(e.key==='ArrowLeft'){e.preventDefault();setTab(activeIdx-1,true);}
+    else if(e.key==='ArrowRight'){e.preventDefault();setTab(activeIdx+1,true);}
+    else if(e.key>='1' && e.key<='4'){setTab(parseInt(e.key,10)-1,true);}
+  });
+  /* ---- grietas interactivas ---- */
+  var cracks=[].slice.call(document.querySelectorAll('#start .crack'));
+  var crackMap=['0','2','3','31']; // mapeo índice grieta → level id
+  function syncCracks(){
+    cracks.forEach(function(c,idx){
+      var st=c.querySelector('.crack-state');
+      if(!st) return;
+      if(isLevelCompleted(crackMap[idx])){
+        st.textContent='\u2714 CRUZADA';st.classList.add('done');st.classList.remove('pending');
+      }else{
+        st.textContent='PENDIENTE';st.classList.add('pending');st.classList.remove('done');
+      }
+    });
+  }
+  syncCracks();
+  cracks.forEach(function(c){
+    c.addEventListener('click',function(e){
+      e.stopPropagation();
+      c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash');
+    });
+  });
+  /* re-sincronizar grietas cada vez que se renderizan los stats */
+  if(typeof renderStats==='function'){
+    var origRS=renderStats;
+    renderStats=function(){origRS();syncCracks();};
+  }
+  if(state==='start') restartAuto();
+  window.__hubMenuStopAuto=stopAuto;
+})();
 function enterPlay(){
 state='play';
 menuMusic.stop();
@@ -1169,6 +1371,7 @@ pauseScreen.classList.add('hidden');
 hud.classList.remove('hidden');
 if(IS_TOUCH)touchUI.classList.remove('hidden');
 else lockPointer();
+if(typeof window.__hubMenuStopAuto==='function') window.__hubMenuStopAuto();
 if(!objectiveShown){
 objectiveShown=true;
 objectiveEl.classList.remove('hidden');

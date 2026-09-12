@@ -451,7 +451,7 @@ opacity:0;transition:opacity .45s;font-weight:200}
 <div id="hint"></div>
 <div id="fps"></div>
 <div id="timestamp">JUN.21 1996  03:12:00 AM</div>
-<div id="objective">OBJETIVO: RECOGE 5 ESQUIRLAS — LA GRIETA SE ESTABILIZA</div>
+<div id="objective">OBJETIVO: RECOGE 5 ESQUIRLAS — LA PISCINA SE LLENA</div>
 <div id="toast"></div>
 <div id="radar">
 <div id="radarSweep"></div>
@@ -489,7 +489,7 @@ opacity:0;transition:opacity .45s;font-weight:200}
 </div>
 <div id="winOv">
 <div class="wTitle">NOCLIP</div>
-<div class="wSub" id="winSub">Atravesaste la grieta FUN. El cumpleaños no era tuyo.</div>
+<div class="wSub" id="winSub">Te hundiste en la grieta. Era una pileta. El agua te escupió en las Poolrooms.</div>
 <div class="wStats" id="winStats"></div>
 <div class="wBtn" id="winBtn">REINTENTAR</div>
 </div>
@@ -550,7 +550,7 @@ opacity:0;transition:opacity .45s;font-weight:200}
 <div class="sDesc">Las luces se apagaron en el nivel 31. Algo ha cambiado, te preguntas porqué, no hay respuesta, solo un sonido de luces infinitas que se estrecha hasta el vasto infinito 🥀.
 El pasillo gira, se estrecha hasta rozarte y se abre en salas vacías.
 Aparecen un snack bar abandonado, un arcade que zumba, un vestuario, una pista de baile que refleja todo.
-A veces las luces mueren, a veces el suelo es agua, a veces el lugar no es del todo normal.<br>No sabes porqué estás aquí, de todas formas tienes que salir.<br><span style="color:rgba(255,122,102,.82)">Recoge 5 ESQUIRLAS de realidad y la GRIETA se estabilizará.<br>Los que se pierden aquí demasiado tiempo dejan de ser personas.<br>Si oyes risas en la oscuridad, no vayas hacia ellas, puedes resistirte a la oscuridad mediante un halo de luz.</span></div>
+A veces las luces mueren, a veces el suelo es agua, a veces el lugar no es del todo normal.<br>No sabes porqué estás aquí, de todas formas tienes que salir.<br><span style="color:rgba(255,122,102,.82)">Recoge 5 ESQUIRLAS de realidad y la pileta de la GRIETA se llenará.<br>Cuando el agua llegue al borde de piedritas, métete: no es agua lo que te traga.<br>Los que se pierden aquí demasiado tiempo dejan de ser personas.<br>Si oyes risas en la oscuridad, no vayas hacia ellas, puedes resistirte a la oscuridad mediante un halo de luz.</span></div>
 <div class="sEnter" id="enterBtn">TOCA PARA ENTRAR</div>
 <div class="sHelp" id="helpTxt"></div>
 </div>
@@ -579,7 +579,7 @@ var TOTAL_SHARDS  = Math.max(SHARDS_NEEDED, parseInt(Q.total||'8',10)||8);
 var MAX_LIVES     = 2;
 var GITHUB_PAGES  = 'https://santyxdddgt.github.io/backrooms/';
 var ON_PAGES      = location.hostname === 'santyxdddgt.github.io';
-var NEXT_LOCAL    = 'levelfun.html';
+var NEXT_LOCAL    = 'poolrooms.html';   /* salida de la GRIETA-PISCINA → https://santyxdddgt.github.io/backrooms/poolrooms.html */
 var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints>0 ||
 (window.matchMedia && matchMedia('(pointer:coarse)').matches);
 if(Q.ui==='0') isTouch=false;
@@ -743,6 +743,48 @@ function makePoolTex(){var c=cvs(128,128),x=c.getContext('2d');
 var g=x.createRadialGradient(64,64,0,64,64,64);
 g.addColorStop(0,'rgba(255,196,120,.85)');g.addColorStop(.45,'rgba(214,140,60,.32)');
 g.addColorStop(1,'rgba(120,60,20,0)');x.fillStyle=g;x.fillRect(0,0,128,128);return texFrom(c);}
+/* ===== [GRIETA-PISCINA] canto rodado blanco (borde de pileta pública) ===== */
+function makePebbleTex(){
+var S=256,c=cvs(S,S),x=c.getContext('2d');
+x.fillStyle='#3b382f';x.fillRect(0,0,S,S);                 /* junta / mortero oscuro */
+var rng=mulberry32(20240617);
+var PASSES=[[58,0.052,0.086,1.00],[120,0.030,0.050,0.93],[210,0.017,0.028,0.86]];
+for(var pi=0;pi<PASSES.length;pi++){
+  var n=PASSES[pi][0],rMin=PASSES[pi][1]*S,rMax=PASSES[pi][2]*S,lum=PASSES[pi][3];
+  for(var i=0;i<n;i++){
+    var px=rng()*S,py=rng()*S;
+    var rx=rMin+rng()*(rMax-rMin),ry=rx*(0.60+rng()*0.36),rot=rng()*6.2832;
+    /* sombra en la junta */
+    x.save();x.translate(px,py);x.rotate(rot);
+    x.fillStyle='rgba(16,15,13,.80)';
+    x.beginPath();x.ellipse(1.7,2.1,rx*1.02,ry*1.02,0,0,6.2832);x.fill();
+    var L=lum*(0.80+rng()*0.26);
+    var cr=Math.round(255*Math.min(1,L)),cg=Math.round(255*Math.min(1,L*0.985)),cb=Math.round(255*Math.min(1,L*0.93));
+    var g=x.createRadialGradient(-rx*0.34,-ry*0.42,rx*0.08,0,0,rx*1.18);
+    g.addColorStop(0,'rgb('+Math.min(255,cr+22)+','+Math.min(255,cg+20)+','+Math.min(255,cb+16)+')');
+    g.addColorStop(0.52,'rgb('+cr+','+cg+','+cb+')');
+    g.addColorStop(1,'rgb('+Math.round(cr*0.46)+','+Math.round(cg*0.47)+','+Math.round(cb*0.52)+')');
+    x.fillStyle=g;x.beginPath();x.ellipse(0,0,rx,ry,0,0,6.2832);x.fill();
+    /* brillo húmedo arriba + oclusión abajo */
+    x.fillStyle='rgba(255,255,255,.26)';
+    x.beginPath();x.ellipse(-rx*0.26,-ry*0.36,rx*0.40,ry*0.28,-0.4,0,6.2832);x.fill();
+    x.fillStyle='rgba(10,10,14,.16)';
+    x.beginPath();x.ellipse(rx*0.18,ry*0.42,rx*0.62,ry*0.30,0,0,6.2832);x.fill();
+    x.restore();}}
+/* suciedad / moho tenue en las juntas */
+for(var d=0;d<420;d++){
+  var a2=rng()*6.2832,rr2=rng()*S*0.7;
+  x.fillStyle=rng()<0.72?'rgba(24,30,26,.16)':'rgba(70,74,58,.13)';
+  x.beginPath();x.arc(S*0.5+Math.cos(a2)*rr2,S*0.5+Math.sin(a2)*rr2,1.5+rng()*7,0,6.2832);x.fill();}
+var t=texFrom(c,1,1);
+if(renderer&&renderer.capabilities)t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy()||1);
+return t;}
+/* ===== [GRIETA-PISCINA] sprite de gota ===== */
+function makeDropTex(){var c=cvs(32,32),x=c.getContext('2d');
+var g=x.createRadialGradient(16,16,0,16,16,16);
+g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.35,'rgba(190,240,255,.72)');
+g.addColorStop(1,'rgba(120,200,230,0)');x.fillStyle=g;x.fillRect(0,0,32,32);
+return new THREE.CanvasTexture(c);}
 function makeSkidTex(){var c=cvs(256,256),x=c.getContext('2d');
 x.strokeStyle='rgba(0,0,0,.4)';x.lineWidth=2.2;
 x.beginPath();x.arc(128,128,90,Math.PI*0.15,Math.PI*0.75);x.stroke();
@@ -958,63 +1000,6 @@ x.stroke();
 var t=new THREE.CanvasTexture(c);
 t.magFilter=THREE.LinearFilter;
 return t;}
-function makeFunGlyphTex(){
-var c=cvs(512,512),x=c.getContext('2d');
-x.fillStyle='#000';x.fillRect(0,0,512,512);
-for(var i=0;i<60;i++){
-var cx=Math.random()*512,cy=Math.random()*512,r=20+Math.random()*80;
-var g=x.createRadialGradient(cx,cy,0,cx,cy,r);
-var hue=Math.floor(Math.random()*360);
-g.addColorStop(0,'hsla('+hue+',100%,72%,.35)');
-g.addColorStop(.6,'hsla('+hue+',100%,60%,.12)');
-g.addColorStop(1,'hsla('+hue+',100%,60%,0)');
-x.fillStyle=g;x.fillRect(cx-r,cy-r,r*2,r*2);}
-x.save();
-x.translate(256,260);
-x.font='bold 200px "Courier New", monospace';
-x.textAlign='center';x.textBaseline='middle';
-var layers=[
-{col:'#ff6ec7',ox:-6,oy:0},
-{col:'#ffe066',ox:0,oy:-4},
-{col:'#6ee7ff',ox:6,oy:0},
-{col:'#ffffff',ox:0,oy:0}
-];
-for(var L=0;L<layers.length;L++){
-x.save();
-x.translate(layers[L].ox,layers[L].oy);
-x.rotate((Math.random()-.5)*0.03);
-x.fillStyle=layers[L].col;
-x.fillText('FUN',0,0);
-x.restore();}
-x.restore();
-x.font='bold 22px "Courier New", monospace';
-x.textAlign='center';x.textBaseline='middle';
-var lines=['HAPPY BIRTHDAY','FELIZ CUMPLEAÑOS','SOPLA LAS VELAS','ABRE EL REGALO','SORPRESA!!','vuelve a casa'];
-for(var i2=0;i2<42;i2++){
-var px=Math.random()*512,py=Math.random()*512;
-var cc=['#ff6ec7','#6ee7ff','#ffe066','#7dffb0','#ffffff'][Math.floor(Math.random()*5)];
-x.fillStyle=cc;
-x.fillText(lines[i2%lines.length],px-80,py);
-}
-x.strokeStyle='#ffe066';x.lineWidth=3;
-for(var v=0;v<12;v++){
-var vx=Math.random()*512,vy=Math.random()*512;
-x.beginPath();x.moveTo(vx,vy);x.lineTo(vx,vy+20);x.stroke();
-x.fillStyle='#ff9f3a';x.beginPath();x.arc(vx,vy-3,3,0,Math.PI*2);x.fill();
-}
-for(var b=0;b<14;b++){
-var bx=Math.random()*512,by=Math.random()*512;
-var cc2=['#ff6ec7','#6ee7ff','#ffe066','#7dffb0'][Math.floor(Math.random()*4)];
-x.fillStyle=cc2;x.globalAlpha=.4;
-x.beginPath();x.arc(bx,by,10+Math.random()*14,0,Math.PI*2);x.fill();
-x.globalAlpha=1;}
-for(var n=0;n<200;n++){
-x.fillStyle=Math.random()<.5?'rgba(255,60,200,.28)':'rgba(80,220,255,.24)';
-x.fillRect(Math.random()*512,Math.random()*512,2+Math.random()*18,1+Math.random()*4);}
-var t=new THREE.CanvasTexture(c);
-t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.LinearFilter;
-return t;}
-function rngSeed(s){return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
 function makePartyWindowTexture(title,msg,seed){
 var rnd=rngSeed(seed);
 var c=document.createElement('canvas');c.width=256;c.height=144;
@@ -1055,70 +1040,476 @@ x.fillRect(rnd()*250,rnd()*140,4+rnd()*30,1+rnd()*4);}
 var t=new THREE.CanvasTexture(c);
 t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearFilter;
 return t;}
-var RIFT_VERT=[
-'varying vec2 vUv;',
-'void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }'
+/* =====================================================================
+   [GRIETA-PISCINA] shaders propios del nivel 31 post-apagón
+   · agua realista: olas gerstner-sin, Fresnel, dispersión cromática (3 IOR),
+     cáusticas, absorción Beer-Lambert, foam, glitch datamosh
+   · piedritas blancas de pileta pública (canto rodado) con luz falsa + wet
+   · pilar glitcheado con aberración cromática radial + doble imagen
+   Nada de esto está reciclado de la grieta del nivel 404.
+   ===================================================================== */
+var GLSL_LIB=[
+'float hash11(float p){ return fract(sin(p*127.1)*43758.5453123); }',
+'float hash21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123); }',
+'float vnoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);',
+'  float a=hash21(i), b=hash21(i+vec2(1.0,0.0)), c=hash21(i+vec2(0.0,1.0)), d=hash21(i+vec2(1.0,1.0));',
+'  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y); }',
+'float fbm2(vec2 p){ float v=0.0, a=0.5;',
+'  for(int i=0;i<4;i++){ v+=a*vnoise(p); p=p*2.03+vec2(1.7,9.2); a*=0.5; } return v; }',
+'float caustic(vec2 p, float t){',
+'  vec2 q=p*2.05;',
+'  float a=sin(q.x*1.10+t*0.70)+sin(q.y*1.31-t*0.55);',
+'  float b=sin((q.x+q.y)*0.83+t*0.93)+sin((q.x-q.y)*1.19-t*0.71);',
+'  float c=sin(length(q-vec2(3.0,1.0))*1.87-t*1.33);',
+'  float v=0.5+0.5*(a+b+c)/5.0;',
+'  return pow(clamp(v,0.0,1.0),5.0); }',
+'float fogF(float d, float dens){ float f=d*d*dens*dens; return clamp(1.0-exp(-f),0.0,1.0); }'
 ].join('\n');
-var RIFT_CORE_FRAG=[
-'uniform float uTime; uniform float uOpen; uniform float uAggro; uniform float uSeed;',
-'uniform sampler2D uGlyphs; varying vec2 vUv;',
-'float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7))+uSeed)*43758.5453); }',
-'float noise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p); f=f*f*(3.0-2.0*f);',
-'  float a=hash(i),b=hash(i+vec2(1.0,0.0)),c=hash(i+vec2(0.0,1.0)),d=hash(i+vec2(1.0,1.0));',
-'  return mix(mix(a,b,f.x),mix(c,d,f.x),f.y); }',
-'float fbm(vec2 p){ float v=0.0; float a=0.5;',
-'  for(int i=0;i<4;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=0.5; } return v; }',
+
+/* ------------------------------- AGUA ------------------------------- */
+var WATER_VERT=[
+'#define NR 4',
+'uniform float uTime,uGlitch,uWave;',
+'uniform vec2 uSize;',
+'uniform vec4 uRipples[NR];',
+'varying vec3 vWorld,vNrm;',
+'varying vec2 vUv,vLocal;',
+'varying float vFog,vH;',
+GLSL_LIB,
+'float waveH(vec2 p, float t){',
+'  float h=0.0;',
+'  h+=sin(dot(p,vec2(0.94,0.34))*2.70 + t*1.15)*0.0300;',
+'  h+=sin(dot(p,vec2(-0.38,0.92))*4.30 - t*0.95)*0.0185;',
+'  h+=sin(dot(p,vec2(0.71,-0.70))*7.10 + t*1.85)*0.0115;',
+'  h+=sin(dot(p,vec2(-0.86,-0.51))*11.7 - t*2.60)*0.0060;',
+'  h+=sin(dot(p,vec2(0.25,0.97))*17.3 + t*3.40)*0.0028;',
+'  for(int i=0;i<NR;i++){',
+'    vec4 r=uRipples[i];',
+'    if(r.w>0.001){',
+'      float age=t-r.z;',
+'      if(age>0.0&&age<3.0){',
+'        float d=distance(p,r.xy);',
+'        float e=(d-age*1.25)*3.4;',
+'        h+=exp(-e*e)*cos((d-age*1.25)*10.0)*r.w*0.050*exp(-age*1.05)/(1.0+d*1.4);',
+'      }',
+'    }',
+'  }',
+'  return h*uWave;',
+'}',
 'void main(){',
-'  float t=uTime; vec2 uv=vUv;',
-'  vec2 q=vec2(fbm(uv*3.5+vec2(0.0,t*0.4)),fbm(uv*3.5+vec2(4.7,-t*0.31)));',
-'  vec2 w=uv+(q-0.5)*(0.30+0.55*uAggro);',
-'  float row=floor(uv.y*36.0);',
-'  float band=step(0.93,hash(vec2(row,floor(t*14.0))));',
-'  w.x+=band*(hash(vec2(row,floor(t*31.0)))-0.5)*0.45;',
-'  float mid=0.5+(fbm(vec2(uv.y*3.0,t*0.5))-0.5)*0.28;',
-'  float fiss=abs(w.x-mid);',
-'  float width=(0.08+0.15*uOpen)*(0.55+0.45*fbm(vec2(uv.y*5.0,t*0.9)));',
-'  float core=1.0-smoothstep(0.0,width,fiss);',
-'  float halo=1.0-smoothstep(width*0.4,width*2.2,fiss);',
-'  float ca=0.010+0.028*uAggro+band*0.02;',
-'  vec3 glyph=vec3(texture2D(uGlyphs,w+vec2(ca,0.0)).r,texture2D(uGlyphs,w).g,texture2D(uGlyphs,w-vec2(ca,0.0)).b);',
-'  float glyphGate=step(0.55,hash(vec2(floor(t*2.5),8.0)));',
-'  vec3 col=vec3(0.01,0.0,0.02);',
-'  col+=glyph*core*(0.25+0.75*glyphGate)*0.9;',
-'  vec3 edgeCol=mix(vec3(1.0,0.43,0.78),vec3(0.43,0.91,1.0),step(w.x,mid));',
-'  if(hash(vec2(floor(t*6.0),2.0))>0.82) edgeCol=vec3(1.0,0.85,0.30);',
-'  if(hash(vec2(floor(t*4.0),3.0))>0.94) edgeCol=vec3(1.0,0.2,0.15);',
-'  col=mix(col,edgeCol,halo*(1.0-core)*0.85);',
-'  float conf=hash(floor(w*40.0)+floor(t*2.0));',
-'  col+=vec3(1.0,0.7,0.9)*step(0.96,conf)*halo*0.5;',
-'  col*=0.80+0.20*sin(uv.y*400.0+t*42.0);',
-'  col*=0.72+0.28*hash(vec2(floor(t*24.0),1.0));',
-'  float alpha=clamp(halo*(0.25+0.75*uOpen),0.0,1.0);',
-'  gl_FragColor=vec4(col*(0.35+0.65*uOpen),alpha);',
+'  vUv=uv; vec2 p=position.xy; vec3 pos=position;',
+'  float row=floor(uv.y*46.0);',
+'  float slice=step(0.90,hash21(vec2(row,floor(uTime*11.0))));',
+'  float tear=(hash21(vec2(row,floor(uTime*19.0)))-0.5)*(0.09+0.50*uGlitch);',
+'  pos.x+=slice*tear;',
+'  float jump=step(0.965,hash21(vec2(floor(uTime*7.0),3.0)));',
+'  pos.y+=jump*(hash11(floor(uTime*7.0))-0.5)*0.45*uGlitch;',
+'  float t=uTime;',
+'  float h=waveH(p,t);',
+'  float e=0.055;',
+'  float hx=waveH(p+vec2(e,0.0),t);',
+'  float hz=waveH(p+vec2(0.0,e),t);',
+'  pos.z+=h;',
+'  vec3 nrm=normalize(vec3(-(hx-h)/e,-(hz-h)/e,1.0));',
+'  vH=h; vLocal=p;',
+'  vec4 wp=modelMatrix*vec4(pos,1.0);',
+'  vWorld=wp.xyz;',
+'  vNrm=normalize(mat3(modelMatrix)*nrm);',
+'  vec4 mv=viewMatrix*wp;',
+'  vFog=-mv.z;',
+'  gl_Position=projectionMatrix*mv;',
 '}'
 ].join('\n');
-var CORRUPT_VERT=[
-'uniform float uTime; uniform float uAggro; varying vec2 vUv;',
-'void main(){ vUv=uv; vec3 p=position;',
-'  float j=sin(uTime*21.0+position.y*17.0+position.x*13.0)*cos(uTime*9.0+position.z*11.0);',
-'  p+=normal*j*0.03*uAggro; p=floor(p*64.0)/64.0;',
-'  gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0); }'
+var WATER_FRAG=[
+'uniform float uTime,uOpen,uAggro,uGlitch,uDepth,uAberr,uSelf,uPix,uFogD;',
+'uniform vec3 uCam,uFogCol;',
+'uniform vec2 uSize,uAxis,uCenter;',
+'varying vec3 vWorld,vNrm;',
+'varying vec2 vUv,vLocal;',
+'varying float vFog,vH;',
+GLSL_LIB,
+'vec3 envCol(vec3 d, vec3 wp){',
+'  float up=clamp(d.y*0.5+0.5,0.0,1.0);',
+'  vec3 col=mix(vec3(0.006,0.005,0.005), vec3(0.030,0.030,0.038), up*up);',
+'  vec2 rel=wp.xz-uCenter;',
+'  float th=3.05-wp.y;',
+'  if(d.y>0.06&&th>0.0){',
+'    vec2 hit=rel+(d.xz/d.y)*th;',
+'    float along=dot(hit,uAxis);',
+'    float across=dot(hit,vec2(uAxis.y,-uAxis.x));',
+'    float m=mod(across+1.7,3.4)-1.7;',
+'    float strip=exp(-m*m*1.9);',
+'    float am=0.45+0.55*smoothstep(0.22,0.78,fract(along*0.055+0.12));',
+'    float fl=0.80+0.20*sin(uTime*2.7+along*0.55);',
+'    col+=vec3(1.0,0.84,0.58)*strip*am*fl*(0.30+0.70*uOpen)*1.15;',
+'  }',
+'  col+=vec3(0.14,0.09,0.055)*pow(1.0-abs(d.y),8.0)*0.75;',
+'  return col;',
+'}',
+'void main(){',
+'  vec3 N=normalize(vNrm);',
+'  vec3 V=normalize(uCam-vWorld);',
+'  if(dot(N,V)<0.0)N=-N;',
+'  float ndv=clamp(dot(N,V),0.0,1.0);',
+'  float rowF=floor(gl_FragCoord.y/(13.0*max(uPix,0.75)));',
+'  float sliceA=step(0.92,hash21(vec2(rowF,floor(uTime*12.0))));',
+'  float sh=(hash21(vec2(rowF,floor(uTime*27.0)))-0.5)*(0.08+0.45*uGlitch)*sliceA;',
+'  vec3 sd=cross(vec3(0.0,1.0,0.0),V);',
+'  sd=(length(sd)<0.001)?vec3(1.0,0.0,0.0):normalize(sd);',
+'  N=normalize(N+sd*sh*0.85);',
+'  float F=0.02+0.98*pow(1.0-ndv,5.0);',
+'  float aber=uAberr*(0.35+F)*(1.0+7.0*uGlitch);',
+'  vec3 R=reflect(-V,N);',
+'  vec3 rc;',
+'#ifdef HQ',
+'  rc=vec3(envCol(normalize(R+sd*aber),vWorld).r, envCol(R,vWorld).g, envCol(normalize(R-sd*aber),vWorld).b);',
+'#else',
+'  rc=envCol(R,vWorld);',
+'#endif',
+'  float path=uDepth/max(0.25,abs(V.y));',
+'  vec3 absorb=exp(-path*vec3(0.62,0.17,0.115));',
+'  vec3 scat=mix(vec3(0.010,0.038,0.046), vec3(0.018,0.105,0.112), uOpen);',
+'  vec2 base=vWorld.xz-uCenter;',
+'  vec3 bot;',
+'#ifdef HQ',
+'  vec3 dR=refract(-V,N,0.7547);',
+'  vec3 dG=refract(-V,N,0.7502);',
+'  vec3 dB=refract(-V,N,0.7435);',
+'  bot=vec3(caustic(base+dR.xz*(uDepth/max(0.12,-dR.y)),uTime),',
+'           caustic(base+dG.xz*(uDepth/max(0.12,-dG.y)),uTime),',
+'           caustic(base+dB.xz*(uDepth/max(0.12,-dB.y)),uTime));',
+'#else',
+'  bot=vec3(caustic(base-V.xz*(uDepth/max(0.12,abs(V.y))),uTime));',
+'#endif',
+'  float grain=0.72+0.36*vnoise(base*9.5);',
+'  vec3 floorCol=vec3(0.60,0.61,0.585)*grain+bot*vec3(0.85,1.0,1.03)*1.45;',
+'  vec3 trans=floorCol*absorb+scat*(1.0-absorb);',
+'  vec3 col=mix(trans,rc,clamp(F,0.0,1.0));',
+'  vec3 L1=normalize(vec3(uAxis.x*0.18,1.0,uAxis.y*0.18));',
+'  vec3 H1=normalize(L1+V), H2=V;',
+'  float sp1=pow(max(dot(N,H1),0.0),250.0);',
+'  float sp2=pow(max(dot(N,H2),0.0),110.0);',
+'#ifdef HQ',
+'  col+=vec3(pow(max(dot(normalize(N+sd*aber*0.9),H1),0.0),250.0),sp1,',
+'            pow(max(dot(normalize(N-sd*aber*0.9),H1),0.0),250.0))*1.25*(0.28+0.72*uOpen);',
+'#else',
+'  col+=vec3(sp1)*1.25*(0.28+0.72*uOpen);',
+'#endif',
+'  col+=vec3(1.0,0.94,0.84)*sp2*0.85;',
+'  float edgeM=min(min(vUv.x,1.0-vUv.x)*uSize.x, min(vUv.y,1.0-vUv.y)*uSize.y);',
+'  float foamE=smoothstep(0.24,0.0,edgeM)*(0.55+0.45*sin(vLocal.x*17.0+uTime*1.7)*sin(vLocal.y*14.0-uTime*1.3));',
+'  float foamC=smoothstep(0.026,0.052,vH);',
+'  float foam=clamp(foamE*0.85+foamC*0.45,0.0,1.0)*(0.30+0.70*uOpen);',
+'  col=mix(col,vec3(0.86,0.93,0.96),clamp(foam,0.0,1.0)*0.80);',
+'  float band=step(0.90,hash21(vec2(rowF,floor(uTime*17.0))));',
+'  vec3 gcol=mix(vec3(0.20,1.0,0.92),vec3(1.0,0.22,0.72),hash21(vec2(floor(uTime*8.0),5.0)));',
+'  col+=gcol*band*uGlitch*0.42;',
+'  col=mix(col,col.gbr,step(0.975,hash21(vec2(floor(uTime*5.0),9.0)))*uGlitch);',
+'  col*=0.94+0.06*sin(gl_FragCoord.y*1.7+uTime*40.0);',
+'  col+=vec3(0.045,0.15,0.19)*uSelf*uOpen*(0.62+0.38*sin(uTime*1.3));',
+'  float alpha=clamp(0.66+0.34*F+foam*0.45,0.0,1.0)*(0.42+0.58*uOpen);',
+'  col=mix(col,uFogCol,fogF(vFog,uFogD));',
+'  gl_FragColor=vec4(col,alpha);',
+'}'
 ].join('\n');
-var CORRUPT_FRAG=[
-'uniform float uTime; uniform float uAggro; uniform float uSeed; varying vec2 vUv;',
-'float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7))+uSeed)*43758.5453); }',
-'void main(){ float t=uTime; vec2 uv=vUv;',
-'  vec3 col=vec3(0.015,0.01,0.03);',
-'  float row=floor(uv.y*22.0);',
-'  float slice=step(0.82,hash(vec2(row,floor(t*18.0))));',
-'  vec3 glitch=mix(vec3(0.95,0.43,0.78),vec3(0.43,0.91,1.0),hash(vec2(row,floor(t*7.0))));',
-'  col+=glitch*slice*(0.35+0.65*uAggro);',
-'  col+=vec3(0.65,0.35,0.85)*hash(vec2(floor(uv.x*30.0),floor(uv.y*30.0))+floor(t*24.0))*0.12;',
-'  col*=0.75+0.25*sin(uv.y*260.0-t*50.0);',
-'  col*=0.7+0.3*hash(vec2(floor(t*20.0),row));',
+
+/* --------------------- PIEDRITAS / ESTRUCTURAS ---------------------- */
+var STONE_VERT=[
+'uniform float uTime,uGlitch;',
+'varying vec3 vN,vWorld,vLocal;',
+'varying float vFog;',
+GLSL_LIB,
+'void main(){',
+'  vec3 p=position;',
+'  float row=floor(position.y*16.0+0.5);',
+'  float sl=step(0.80,hash21(vec2(row,floor(uTime*11.0))));',
+'  p.x+=(hash21(vec2(row,floor(uTime*21.0)))-0.5)*0.085*uGlitch*sl;',
+'  p.z+=(hash21(vec2(row*1.7,floor(uTime*17.0)))-0.5)*0.085*uGlitch*sl;',
+'  vLocal=p;',
+'  vec4 wp=modelMatrix*vec4(p,1.0);',
+'  vWorld=wp.xyz;',
+'  vN=normalize(mat3(modelMatrix)*normal);',
+'  vec4 mv=viewMatrix*wp;',
+'  vFog=-mv.z;',
+'  gl_Position=projectionMatrix*mv;',
+'}'
+].join('\n');
+var STONE_FRAG=[
+'uniform float uTime,uOpen,uGlitch,uAberr,uWaterY,uCaustic,uPebScale,uFogD,uSelf;',
+'uniform vec3 uCam,uFogCol,uTint;',
+'uniform sampler2D uMap;',
+'varying vec3 vN,vWorld,vLocal;',
+'varying float vFog;',
+GLSL_LIB,
+'void main(){',
+'  vec3 N=normalize(vN);',
+'  vec3 V=normalize(uCam-vWorld);',
+'  vec3 an=abs(N);',
+'  vec2 st;',
+'  if(an.y>=an.x&&an.y>=an.z) st=vLocal.xz;',
+'  else if(an.x>=an.z) st=vLocal.zy;',
+'  else st=vLocal.xy;',
+'  st*=uPebScale;',
+'  float ab=uAberr*(0.25+2.2*uGlitch);',
+'  vec3 tex;',
+'#ifdef HQ',
+'  tex=vec3(texture2D(uMap,st+vec2(ab,0.0)).r, texture2D(uMap,st).g, texture2D(uMap,st-vec2(ab,0.0)).b);',
+'#else',
+'  tex=texture2D(uMap,st).rgb;',
+'#endif',
+'  float grout=smoothstep(0.28,0.66,dot(tex,vec3(0.3333)));',
+'  float wet=smoothstep(uWaterY+0.34,uWaterY-0.03,vWorld.y);',
+'  vec3 base=tex*uTint*mix(1.0,0.56,wet*0.85);',
+'  vec3 L1=normalize(vec3(0.22,1.0,0.14));',
+'  float diff=max(dot(N,L1),0.0);',
+'  vec3 Ld=uCam-vWorld; float dl=length(Ld); Ld/=max(dl,0.001);',
+'  float att=1.0/(1.0+dl*dl*0.30);',
+'  float diffP=max(dot(N,Ld),0.0)*att;',
+'  vec3 col=base*(0.10+0.60*diff+1.90*diffP);',
+'  col+=base*vec3(0.045,0.075,0.095)*0.70;',
+'  float gloss=mix(0.18,0.80,wet)*grout;',
+'  vec3 H1=normalize(L1+V), H2=normalize(Ld+V);',
+'  float sp1=pow(max(dot(N,H1),0.0),64.0);',
+'  float sp2=pow(max(dot(N,H2),0.0),90.0);',
+'#ifdef HQ',
+'  col+=vec3(pow(max(dot(normalize(N+vec3(ab*3.0,0.0,0.0)),H1),0.0),64.0), sp1,',
+'            pow(max(dot(normalize(N-vec3(ab*3.0,0.0,0.0)),H1),0.0),64.0))*gloss*0.55;',
+'#else',
+'  col+=vec3(sp1)*gloss*0.55;',
+'#endif',
+'  col+=vec3(1.0,0.95,0.88)*sp2*gloss*1.35;',
+'  float ca=caustic(vWorld.xz*1.55,uTime);',
+'  col+=vec3(0.35,0.85,0.90)*ca*uCaustic*wet*(0.35+0.65*uOpen)*0.55;',
+'  float band=step(0.86,hash21(vec2(floor(vWorld.y*70.0),floor(uTime*14.0))));',
+'  col=mix(col,mix(col.gbr*1.15,vec3(0.75,0.15,0.95),0.25),band*uGlitch*0.80);',
+'  col+=vec3(0.04,0.12,0.16)*uSelf*uOpen*0.50;',
+'  col=mix(col,uFogCol,fogF(vFog,uFogD));',
 '  gl_FragColor=vec4(col,1.0);',
 '}'
 ].join('\n');
+
+/* ------------------------- PILAR GLITCHEADO ------------------------- */
+var PILLAR_VERT=[
+'uniform float uTime,uGlitch;',
+'varying vec3 vN,vWorld,vLocal;',
+'varying vec2 vUv;',
+'varying float vFog;',
+GLSL_LIB,
+'void main(){',
+'  vUv=uv; vec3 p=position;',
+'  float row=floor(p.y*26.0+0.5);',
+'  float sl=step(0.62,hash21(vec2(row,floor(uTime*13.0))));',
+'  p.x+=(hash21(vec2(row,floor(uTime*23.0)))-0.5)*0.14*uGlitch*sl;',
+'  p.z+=(hash21(vec2(row*1.9,floor(uTime*19.0)))-0.5)*0.14*uGlitch*sl;',
+'  p.y+=step(0.93,hash21(vec2(row*0.7,floor(uTime*15.0))))*(hash11(row+floor(uTime*15.0))-0.5)*0.05*uGlitch;',
+'  p.x+=sin(uTime*0.55+p.y*1.9)*0.010*(1.0+uGlitch*2.0);',
+'  vLocal=p;',
+'  vec4 wp=modelMatrix*vec4(p,1.0);',
+'  vWorld=wp.xyz;',
+'  vN=normalize(mat3(modelMatrix)*normal);',
+'  vec4 mv=viewMatrix*wp;',
+'  vFog=-mv.z;',
+'  gl_Position=projectionMatrix*mv;',
+'}'
+].join('\n');
+var PILLAR_FRAG=[
+'uniform float uTime,uOpen,uGlitch,uAberr,uWaterY,uPebScale,uFogD,uSelf;',
+'uniform vec3 uCam,uFogCol,uTint;',
+'uniform sampler2D uMap;',
+'varying vec3 vN,vWorld,vLocal;',
+'varying vec2 vUv;',
+'varying float vFog;',
+GLSL_LIB,
+'void main(){',
+'  vec3 N=normalize(vN);',
+'  vec3 V=normalize(uCam-vWorld);',
+'  vec3 an=abs(N);',
+'  vec2 st;',
+'  if(an.y>=an.x&&an.y>=an.z) st=vLocal.xz;',
+'  else if(an.x>=an.z) st=vLocal.zy;',
+'  else st=vLocal.xy;',
+'  st*=uPebScale;',
+'  /* aberración cromática radial (tipo lente) + disparo por glitch */',
+'  vec2 rad=vLocal.xz;',
+'  float radL=length(rad);',
+'  vec2 dir=(radL<0.0005)?vec2(1.0,0.0):rad/radL;',
+'  float ab=uAberr*(0.30+1.35*radL)*(1.0+9.0*uGlitch);',
+'  vec2 ao=dir*ab;',
+'  vec3 tex;',
+'#ifdef HQ',
+'  tex=vec3(texture2D(uMap,st+ao).r, texture2D(uMap,st).g, texture2D(uMap,st-ao).b);',
+'  /* doble imagen fantasma magenta / cian */',
+'  float ghost=step(0.55,uGlitch)*uGlitch;',
+'  vec2 go=vec2(0.22*uGlitch,0.0);',
+'  float gr=texture2D(uMap,st+go).g, gb=texture2D(uMap,st-go).g;',
+'  tex+=vec3(0.85,0.15,0.70)*gr*ghost*0.55;',
+'  tex+=vec3(0.15,0.85,0.95)*gb*ghost*0.55;',
+'#else',
+'  tex=texture2D(uMap,st).rgb;',
+'  tex+=vec3(0.6,0.2,0.7)*step(0.6,uGlitch)*uGlitch*0.35;',
+'#endif',
+'  float grout=smoothstep(0.28,0.66,dot(tex,vec3(0.3333)));',
+'  float wet=smoothstep(uWaterY+0.34,uWaterY-0.03,vWorld.y);',
+'  vec3 base=tex*uTint*mix(1.0,0.74,wet*0.6);',
+'  vec3 L1=normalize(vec3(0.22,1.0,0.14));',
+'  float diff=max(dot(N,L1),0.0);',
+'  vec3 Ld=uCam-vWorld; float dl=length(Ld); Ld/=max(dl,0.001);',
+'  float att=1.0/(1.0+dl*dl*0.30);',
+'  float diffP=max(dot(N,Ld),0.0)*att;',
+'  vec3 col=base*(0.11+0.62*diff+1.90*diffP);',
+'  col+=base*vec3(0.05,0.08,0.10)*0.75;',
+'  float gloss=mix(0.30,0.85,wet)*grout;',
+'  vec3 H1=normalize(L1+V), H2=normalize(Ld+V);',
+'#ifdef HQ',
+'  col+=vec3(pow(max(dot(normalize(N+vec3(ab*2.4,0.0,0.0)),H1),0.0),70.0),',
+'            pow(max(dot(N,H1),0.0),70.0),',
+'            pow(max(dot(normalize(N-vec3(ab*2.4,0.0,0.0)),H1),0.0),70.0))*gloss*0.75;',
+'#else',
+'  col+=vec3(pow(max(dot(N,H1),0.0),70.0))*gloss*0.75;',
+'#endif',
+'  col+=vec3(1.0,0.95,0.88)*pow(max(dot(N,H2),0.0),95.0)*gloss*1.45;',
+'  /* juntas brillantes + bandas de datos corruptas */',
+'  float seam=smoothstep(0.42,0.5,abs(fract(vUv.y*7.0)-0.5));',
+'  col+=vec3(0.10,0.55,0.62)*seam*(0.10+0.35*uOpen+0.5*uGlitch);',
+'  float band=step(0.80,hash21(vec2(floor(vUv.y*54.0),floor(uTime*15.0))));',
+'  vec3 bcol=mix(vec3(0.25,1.0,0.95),vec3(1.0,0.20,0.80),hash21(vec2(floor(uTime*6.0),2.0)));',
+'  col=mix(col,col.gbr*1.1+bcol*0.30,band*uGlitch*0.85);',
+'  col+=bcol*band*uGlitch*0.22;',
+'  col*=0.93+0.07*sin(gl_FragCoord.y*2.1+uTime*45.0);',
+'  col+=vec3(0.05,0.14,0.18)*uSelf*uOpen*0.6;',
+'  col=mix(col,uFogCol,fogF(vFog,uFogD));',
+'  gl_FragColor=vec4(col,1.0);',
+'}'
+].join('\n');
+
+/* --------------------- PIEDRITAS 3D (malla fundida) ------------------ */
+var PEBBLE_VERT=[
+'uniform float uTime,uGlitch;',
+'attribute vec3 aTint;',
+'attribute float aSeed;',
+'varying vec3 vN,vWorld,vTint;',
+'varying float vFog,vSeed;',
+GLSL_LIB,
+'void main(){',
+'  vec3 p=position;',
+'  float row=step(0.72,hash11(floor(uTime*10.0)+aSeed));',
+'  p.x+=(hash11(aSeed+floor(uTime*11.0))-0.5)*0.30*uGlitch*row;',
+'  p.y+=(hash11(aSeed*1.7+floor(uTime*9.0))-0.5)*0.10*uGlitch*row;',
+'  vec4 wp=modelMatrix*vec4(p,1.0);',
+'  vWorld=wp.xyz;',
+'  vN=normalize(mat3(modelMatrix)*normal);',
+'  vTint=aTint; vSeed=aSeed;',
+'  vec4 mv=viewMatrix*wp;',
+'  vFog=-mv.z;',
+'  gl_Position=projectionMatrix*mv;',
+'}'
+].join('\n');
+var PEBBLE_FRAG=[
+'uniform float uTime,uOpen,uGlitch,uAberr,uFogD;',
+'uniform vec3 uCam,uFogCol;',
+'varying vec3 vN,vWorld,vTint;',
+'varying float vFog,vSeed;',
+GLSL_LIB,
+'void main(){',
+'  vec3 N=normalize(vN);',
+'  vec3 V=normalize(uCam-vWorld);',
+'  vec3 base=vTint*(0.80+0.34*hash11(vSeed*3.1));',
+'  vec3 L1=normalize(vec3(0.22,1.0,0.14));',
+'  float diff=max(dot(N,L1),0.0);',
+'  vec3 Ld=uCam-vWorld; float dl=length(Ld); Ld/=max(dl,0.001);',
+'  float att=1.0/(1.0+dl*dl*0.30);',
+'  float diffP=max(dot(N,Ld),0.0)*att;',
+'  vec3 col=base*(0.12+0.58*diff+2.00*diffP);',
+'  col+=base*vec3(0.05,0.08,0.10)*0.70;',
+'  float glos=0.35+0.65*hash11(vSeed*7.7);',
+'  vec3 H1=normalize(L1+V), H2=normalize(Ld+V);',
+'  float ab=uAberr*(1.0+8.0*uGlitch);',
+'#ifdef HQ',
+'  col+=vec3(pow(max(dot(normalize(N+vec3(ab,0.0,0.0)),H1),0.0),48.0),',
+'            pow(max(dot(N,H1),0.0),48.0),',
+'            pow(max(dot(normalize(N-vec3(ab,0.0,0.0)),H1),0.0),48.0))*glos*0.55;',
+'#else',
+'  col+=vec3(pow(max(dot(N,H1),0.0),48.0))*glos*0.55;',
+'#endif',
+'  col+=vec3(1.0,0.95,0.88)*pow(max(dot(N,H2),0.0),90.0)*glos*1.60;',
+'  float band=step(0.85,hash21(vec2(floor(vWorld.y*70.0),floor(uTime*15.0))));',
+'  col=mix(col,col.gbr*1.20+vec3(0.06,0.0,0.08),band*uGlitch*0.75);',
+'  col=mix(col,uFogCol,fogF(vFog,uFogD));',
+'  gl_FragColor=vec4(col,1.0);',
+'}'
+].join('\n');
+
+/* --------------------------- CHORRO DE AGUA -------------------------- */
+var JET_VERT=[
+'varying vec2 vUv;',
+'varying float vFog;',
+'void main(){ vUv=uv;',
+'  vec4 mv=modelViewMatrix*vec4(position,1.0);',
+'  vFog=-mv.z;',
+'  gl_Position=projectionMatrix*mv;',
+'}'
+].join('\n');
+var JET_FRAG=[
+'uniform float uTime,uOpen,uGlitch,uFogD;',
+'uniform vec3 uColor,uCam,uFogCol;',
+'varying vec2 vUv;',
+'varying float vFog;',
+GLSL_LIB,
+'void main(){',
+'  vec2 uv=vUv;',
+'  float flow=uv.y*3.2-uTime*2.3;',
+'  float n=vnoise(vec2(uv.x*8.0,flow*2.0));',
+'  float ed=1.0-abs(uv.x-0.5)*2.0;',
+'  float a=smoothstep(0.0,0.40,ed)*(0.55+0.45*n)*(0.25+0.75*uOpen);',
+'  a*=smoothstep(0.0,0.10,uv.y)*smoothstep(1.0,0.86,uv.y);',
+'  float tear=step(0.93,hash21(vec2(floor(uv.y*22.0),floor(uTime*14.0))));',
+'  a*=1.0+tear*uGlitch*1.4;',
+'  vec3 col=uColor*(0.62+0.62*n)+vec3(0.62,0.92,1.0)*pow(max(ed,0.0),7.0)*0.55;',
+'  col=mix(col,uFogCol,fogF(vFog,uFogD));',
+'  gl_FragColor=vec4(col,a);',
+'}'
+].join('\n');
+
+/* ------------------------- HAZ VOLUMÉTRICO --------------------------- */
+var BEAM_VERT=[
+'uniform float uTime;',
+'varying vec2 vUv;',
+'varying vec3 vN,vWorld;',
+'varying float vFog;',
+'void main(){',
+'  vUv=uv; vec3 p=position;',
+'  p.x+=sin(uTime*0.55+p.y*2.0)*0.05;',
+'  p.z+=cos(uTime*0.47+p.y*1.7)*0.05;',
+'  vec4 wp=modelMatrix*vec4(p,1.0);',
+'  vWorld=wp.xyz;',
+'  vN=normalize(mat3(modelMatrix)*normal);',
+'  vec4 mv=viewMatrix*wp;',
+'  vFog=-mv.z;',
+'  gl_Position=projectionMatrix*mv;',
+'}'
+].join('\n');
+var BEAM_FRAG=[
+'uniform float uTime,uOpen,uGlitch,uFogD,uInt;',
+'uniform vec3 uCam,uFogCol,uColor;',
+'varying vec2 vUv;',
+'varying vec3 vN,vWorld;',
+'varying float vFog;',
+GLSL_LIB,
+'void main(){',
+'  vec3 N=normalize(vN);',
+'  vec3 V=normalize(uCam-vWorld);',
+'  float core=pow(abs(dot(N,V)),1.35);',
+'  float vert=smoothstep(1.0,0.22,vUv.y)*smoothstep(0.0,0.14,vUv.y);',
+'  float n=fbm2(vec2(vUv.x*6.0,vUv.y*3.0-uTime*0.22));',
+'  float a=core*vert*(0.45+0.55*n)*uInt*(0.22+0.78*uOpen);',
+'  float band=step(0.90,hash21(vec2(floor(vUv.y*40.0),floor(uTime*15.0))));',
+'  a*=1.0+band*uGlitch*1.8;',
+'  a*=1.0-fogF(vFog,uFogD)*0.75;',
+'  vec3 col=uColor*(1.0+0.55*uOpen)+vec3(0.5,0.0,0.35)*band*uGlitch;',
+'  gl_FragColor=vec4(col*a,a);',
+'}'
+].join('\n');
+
 var canvas=document.getElementById('c'),renderer;
 function showErr(msg){var b=document.getElementById('errBox');document.getElementById('errMsg').textContent=msg;b.style.display='flex';}
 try{renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:!isTouch,powerPreference:'high-performance'});}
@@ -3162,7 +3553,7 @@ for(var i=0;i<liveMachines.length;i++){
 var d=Math.hypot(liveMachines[i].x-player.x,liveMachines[i].z-player.z);
 if(d<22)hg=Math.max(hg,0.055*(1-d/22));}
 if(humG)humG.gain.setTargetAtTime(hg*ambientMul,AC.currentTime,0.25);
-if(lapG)lapG.gain.setTargetAtTime((inWater?0.045:0)*ambientMul,AC.currentTime,0.4);}
+if(lapG)lapG.gain.setTargetAtTime(Math.max((inWater?0.045:0),poolAmb)*ambientMul,AC.currentTime,0.4);}
 var th=curTheme();
 if(th==='arcade'){bleepT-=dt;if(bleepT<0){sndBleep();bleepT=2+Math.random()*5;}}
 else if(th==='vest'){clankT-=dt;if(clankT<0){sndClank();clankT=6+Math.random()*10;}}
@@ -3218,7 +3609,7 @@ shardCount++;updateShardHud();sndShardPickup();
 if(shardCount<SHARDS_NEEDED){
 showToast('ESQUIRLA '+shardCount+'/'+SHARDS_NEEDED+' — LA REALIDAD SE RESQUEBRAJA');}
 else if(shardCount===SHARDS_NEEDED){
-showToast('LA GRIETA FUN SE ESTABILIZA — ENCUÉNTRALA');riftOpen=true;
+showToast('LA PISCINA SE ESTÁ LLENANDO — ENCUÉNTRALA');riftOpen=true;
 showObjective();}
 else{showToast('ESQUIRLA '+shardCount+' — SOBRA');}
 return true;}}
@@ -3304,30 +3695,77 @@ state='play';
 showToast('▓ '+REVIVE_LINES[reviveIdx++%REVIVE_LINES.length]+' ▓');}}
 var riftOpen=false, riftEntering=false, riftWon=false;
 var riftPos={x:0,z:0};
-var riftGroup=null, riftPipes=[], riftLayers=[], riftDialogs=[];
+var riftGroup=null, riftDialogs=[];
 var riftBalloons=[], riftFaces=[];
-var riftGlyphTex=null, riftCoreMats=[], riftCorruptMats=[];
 var riftOpenAmt=0, riftDialogAmt=0, riftProx=0;
 var riftPhase='stable', riftPhaseT=0, riftShiftTimer=26, riftChimeT=6;
 var noclipT=0;
+/* =====================================================================
+   [GRIETA-PISCINA] — salida propia del Nivel 31 post-apagón → POOLROOMS
+   Pileta pública de obra: agua realista con glitches, borde de piedritas
+   blancas (canto rodado), mini pilar glitcheado con aberración cromática,
+   chorro, cáusticas, gotas, ondas y haz volumétrico.
+   ===================================================================== */
+var POOL_W=2.75, POOL_L=4.70, POOL_C=0.40, POOL_H=1.02, POOL_FLOOR=0.10;
+var POOL_EMPTY=0.18, POOL_FULL=0.80;                  /* cota del agua: cascajo -> llena */
+var POOL_PX=POOL_W*0.5+POOL_C+0.44;                   /* pilar, a un lado de la pileta */
+var POOL_PZ=POOL_L*0.5-1.20;
+var POOL_FOOT_W=5.15, POOL_FOOT_L=5.70;               /* huella total (con pilar) */
+var RIFT_HQ=true;
+var riftMats=[], riftDispose=[], riftDrops=null, riftDropPos=null, riftDropVel=[], riftDropLife=[];
+var riftWater=null, riftWaterMat=null, riftBeam=null, riftJet=null;
+var riftBaseScale=1, riftYaw=0, riftTriggerR=2.2;
+var riftGlitch=0, riftGlitchT=1.2, riftGlitchBurst=0;
+var riftRipples=[new THREE.Vector4(),new THREE.Vector4(),new THREE.Vector4(),new THREE.Vector4()];
+var riftRippleI=0, riftRippleT=0.4, riftDropT=0.2, splashT=0;
+var poolAmb=0;
+/* uniforms compartidos por todos los materiales de la pileta */
+var RU={
+time:{value:0}, open:{value:0}, aggro:{value:0.2}, glitch:{value:0},
+cam:{value:new THREE.Vector3()}, waterY:{value:POOL_FULL},
+fogCol:{value:new THREE.Color(0x030202)}, fogD:{value:FOG_DENSITY},
+pix:{value:1}, axis:{value:new THREE.Vector2(0,1)}, center:{value:new THREE.Vector2()},
+pebble:{value:null}};
 var RIFT_MESSAGES=[
-['SISTEMA.EXE','FELIZ CUMPLEAÑOS'],
-['AVISO','sopla las velas'],
-['?????','no abras el regalo'],
-['MEMORIA','¿recuerdas la tarta?'],
-['ERROR 404','CUMPLEAÑOS NO ENCONTRADO']];
-function makeRiftCoreMaterial(seed){
-return new THREE.ShaderMaterial({
-uniforms:{uTime:{value:0},uOpen:{value:0},uAggro:{value:0.2},
-uSeed:{value:seed},uGlyphs:{value:riftGlyphTex}},
-vertexShader:RIFT_VERT,fragmentShader:RIFT_CORE_FRAG,
-transparent:true,depthWrite:false,side:THREE.DoubleSide});}
-function makeCorruptMaterial(seed){
-var m=new THREE.ShaderMaterial({
-uniforms:{uTime:{value:0},uAggro:{value:0.3},uSeed:{value:seed}},
-vertexShader:CORRUPT_VERT,fragmentShader:CORRUPT_FRAG,
-side:THREE.DoubleSide});
-riftCorruptMats.push(m);return m;}
+['SISTEMA.EXE','PILETA MUNICIPAL Nº 31'],
+['AVISO','no tragues el agua'],
+['MANTENIMIENTO','cloro: 0.00 ppm'],
+['?????','hay alguien en el fondo'],
+['MEMORIA','¿recuerdas el verano del 96?'],
+['REGISTRO','profundidad 2.10 m — ERROR']];
+function addRipple(lx,lz,str){
+var r=riftRipples[riftRippleI&3];riftRippleI++;
+r.set(lx,-lz,RU.time.value,str);}
+function spawnDrop(x,y,z){
+for(var i=0;i<riftDropLife.length;i++){
+if(riftDropLife[i]<=0){
+riftDropLife[i]=0.55+Math.random()*0.55;
+var v=riftDropVel[i];
+v.set((Math.random()-0.5)*0.60,0.70+Math.random()*0.95,(Math.random()-0.5)*0.60);
+riftDropPos[i*3]=x+(Math.random()-0.5)*0.10;
+riftDropPos[i*3+1]=y+0.03;
+riftDropPos[i*3+2]=z+(Math.random()-0.5)*0.10;
+return;}}}
+function updateDrops(dt){
+var n=riftDropLife.length,any=false;
+for(var i=0;i<n;i++){
+if(riftDropLife[i]<=0)continue;
+any=true;riftDropLife[i]-=dt;
+var v=riftDropVel[i];v.y-=7.2*dt;
+riftDropPos[i*3]+=v.x*dt;riftDropPos[i*3+1]+=v.y*dt;riftDropPos[i*3+2]+=v.z*dt;
+if(riftDropLife[i]<=0||riftDropPos[i*3+1]<POOL_FLOOR){riftDropLife[i]=0;riftDropPos[i*3+1]=-999;}}
+if(any&&riftDrops)riftDrops.geometry.attributes.position.needsUpdate=true;}
+/* encaja la pileta en el pasillo/sala y la orienta a lo largo del corredor */
+function fitRift(b){
+if(!b)b=nearestBox(riftPos.x,riftPos.z);
+if(b){
+riftYaw=Math.atan2(b.dx,b.dz);
+var s=Math.min((b.w-0.75)/POOL_FOOT_W,(b.len-2.2)/POOL_FOOT_L,1);
+riftBaseScale=Math.max(0.55,Math.min(1,s));
+RU.axis.value.set(b.dx,b.dz);}
+else{riftBaseScale=1;}
+riftTriggerR=Math.max(1.5,(POOL_W*0.5+POOL_C)*riftBaseScale+0.45);
+RU.center.value.set(riftPos.x,riftPos.z);}
 function buildRiftDialogs(){
 riftDialogs=[];
 for(var i=0;i<RIFT_MESSAGES.length;i++){
@@ -3340,14 +3778,14 @@ var m=new THREE.Mesh(new THREE.PlaneGeometry(1.5,0.844),mat);
 m.renderOrder=6;m.visible=false;scene.add(m);
 riftDialogs.push({mesh:m,seed:i*91.7+4,on:false,
 ang:(i/RIFT_MESSAGES.length)*Math.PI*2,
-rad:1.7+(i%3)*0.5,h:0.9+i*0.34,
+rad:2.15+(i%3)*0.55,h:1.45+i*0.28,
 blinkT:0,snapT:0,off:new THREE.Vector3(),
 baseOp:i===4?0.95:0.8});}}
 function findRiftPosition(){
 var inf=chunkInfo(-46);
 var b=inf.boxes[0];
 var P=lw(b,b.len*0.7,0);
-return{x:P.x,z:P.z};}
+return{x:P.x,z:P.z,box:b};}
 function buildRiftPartygoers(){
 var rng=mulberry32(SEED*97+3);
 for(var b=0;b<12;b++){
@@ -3443,110 +3881,305 @@ F.mesh.rotateZ(Math.sin(t*1.1+F.ph)*0.12);
 F.mat.opacity=0.55+riftOpenAmt*0.4;
 }
 }
+/* ---------------------- fábricas de materiales ---------------------- */
+function riftRegMat(m){riftMats.push(m);riftDispose.push(m);return m;}
+function makeRiftWaterMat(hq){
+var m=new THREE.ShaderMaterial({
+uniforms:{uTime:RU.time,uOpen:RU.open,uAggro:RU.aggro,uGlitch:RU.glitch,
+uCam:RU.cam,uFogCol:RU.fogCol,uFogD:RU.fogD,uPix:RU.pix,uAxis:RU.axis,uCenter:RU.center,
+uDepth:{value:0.70},uWave:{value:1},uAberr:{value:0.013},uSelf:{value:0.60},
+uSize:{value:new THREE.Vector2(POOL_W,POOL_L)},uRipples:{value:riftRipples}},
+defines:hq?{HQ:1}:{},
+vertexShader:WATER_VERT,fragmentShader:WATER_FRAG,
+transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false});
+riftWaterMat=m;return riftRegMat(m);}
+function makeRiftStoneMat(opt){
+opt=opt||{};
+var m=new THREE.ShaderMaterial({
+uniforms:{uTime:RU.time,uOpen:RU.open,uGlitch:RU.glitch,uCam:RU.cam,
+uFogCol:RU.fogCol,uFogD:RU.fogD,uWaterY:RU.waterY,
+uAberr:{value:opt.aberr!==undefined?opt.aberr:0.005},
+uCaustic:{value:opt.caustic||0},
+uSelf:{value:opt.self!==undefined?opt.self:0.4},
+uPebScale:{value:opt.scale||1.35},
+uTint:{value:new THREE.Color(opt.tint||0xffffff)},
+uMap:RU.pebble},
+defines:RIFT_HQ?{HQ:1}:{},
+vertexShader:STONE_VERT,fragmentShader:STONE_FRAG,
+side:opt.side||THREE.FrontSide,fog:false});
+return riftRegMat(m);}
+function makeRiftPillarMat(){
+var m=new THREE.ShaderMaterial({
+uniforms:{uTime:RU.time,uOpen:RU.open,uGlitch:RU.glitch,uCam:RU.cam,
+uFogCol:RU.fogCol,uFogD:RU.fogD,uWaterY:RU.waterY,
+uAberr:{value:0.020},uSelf:{value:0.7},uPebScale:{value:2.20},
+uTint:{value:new THREE.Color(0xfff4e6)},uMap:RU.pebble},
+defines:RIFT_HQ?{HQ:1}:{},
+vertexShader:PILLAR_VERT,fragmentShader:PILLAR_FRAG,side:THREE.DoubleSide,fog:false});
+return riftRegMat(m);}
+function makeRiftPebbleMat(){
+var m=new THREE.ShaderMaterial({
+uniforms:{uTime:RU.time,uOpen:RU.open,uGlitch:RU.glitch,uCam:RU.cam,
+uFogCol:RU.fogCol,uFogD:RU.fogD,uAberr:{value:0.030}},
+defines:RIFT_HQ?{HQ:1}:{},
+vertexShader:PEBBLE_VERT,fragmentShader:PEBBLE_FRAG,fog:false});
+return riftRegMat(m);}
+function makeRiftJetMat(){
+var m=new THREE.ShaderMaterial({
+uniforms:{uTime:RU.time,uOpen:RU.open,uGlitch:RU.glitch,uCam:RU.cam,
+uFogCol:RU.fogCol,uFogD:RU.fogD,uColor:{value:new THREE.Color(0x9fdcf0)}},
+vertexShader:JET_VERT,fragmentShader:JET_FRAG,
+transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false});
+return riftRegMat(m);}
+function makeRiftBeamMat(){
+var m=new THREE.ShaderMaterial({
+uniforms:{uTime:RU.time,uOpen:RU.open,uGlitch:RU.glitch,uCam:RU.cam,
+uFogCol:RU.fogCol,uFogD:RU.fogD,uInt:{value:0.30},
+uColor:{value:new THREE.Color(0x7fe4ff)}},
+vertexShader:BEAM_VERT,fragmentShader:BEAM_FRAG,
+transparent:true,depthWrite:false,side:THREE.DoubleSide,
+blending:THREE.AdditiveBlending,fog:false});
+return riftRegMat(m);}
+/* ---------- campo de piedritas blancas (una sola malla fundida) ---------- */
+function buildRiftPebbles(count){
+var base=new THREE.IcosahedronGeometry(1,0);
+var bp=base.attributes.position.array,bn=base.attributes.normal.array;
+var vc=bp.length/3;
+var pos=new Float32Array(vc*3*count),nrm=new Float32Array(vc*3*count),
+tnt=new Float32Array(vc*3*count),sed=new Float32Array(vc*count);
+var rng=mulberry32(SEED*131+77);
+var m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),nm=new THREE.Matrix3(),
+v=new THREE.Vector3(),nv=new THREE.Vector3(),pv=new THREE.Vector3(),sv=new THREE.Vector3();
+var W=POOL_W,L=POOL_L,C=POOL_C,HH=POOL_H;
+for(var i=0;i<count;i++){
+var r=rng(),px=0,py=0,pz=0;
+if(r<0.46){                                     /* corona del bordón */
+var side=rng();
+if(side<0.36){px=(rng()-0.5)*(W+2*C);pz=(rng()<0.5?-1:1)*(L*0.5+C*0.5);}
+else if(side<0.72){pz=(rng()-0.5)*(L+2*C);px=(rng()<0.5?-1:1)*(W*0.5+C*0.5);}
+else{px=(rng()-0.5)*(W+2*C);pz=(rng()-0.5)*(L+2*C);}
+py=HH+(rng()-0.5)*0.035;}
+else if(r<0.70){                                /* sueltas en el piso */
+var a=rng()*6.2832,rad=Math.max(W,L)*0.5+C+0.10+rng()*1.20;
+px=Math.cos(a)*rad*0.92;pz=Math.sin(a)*rad*0.86;py=0.012;}
+else if(r<0.88){                                /* alrededor del pilar */
+var a2=rng()*6.2832,r2=0.28+rng()*0.46;
+px=POOL_PX+Math.cos(a2)*r2;pz=POOL_PZ+Math.sin(a2)*r2;py=0.012;}
+else{                                           /* saltadas del muro exterior */
+if(rng()<0.5){px=(rng()<0.5?-1:1)*(W*0.5+C);pz=(rng()-0.5)*(L+2*C);}
+else{pz=(rng()<0.5?-1:1)*(L*0.5+C);px=(rng()-0.5)*(W+2*C);}
+py=0.05+rng()*(HH-0.14);}
+var rr=0.022+rng()*0.026;
+e.set(rng()*6.2832,rng()*6.2832,rng()*6.2832);q.setFromEuler(e);
+pv.set(px,py,pz);
+sv.set(rr*(0.85+rng()*0.45),rr*(0.52+rng()*0.30),rr*(0.85+rng()*0.45));
+m4.compose(pv,q,sv);nm.getNormalMatrix(m4);
+var lum=0.72+rng()*0.28,warm=rng();
+var cr=lum*(0.97+warm*0.03),cg=lum*0.965,cb=lum*(0.90+(1.0-warm)*0.09);
+if(rng()<0.07){cr*=0.50;cg*=0.54;cb*=0.60;}
+else if(rng()<0.06){cr*=1.0;cg*=0.90;cb*=0.74;}
+var sd=rng()*97.0;
+for(var k=0;k<vc;k++){
+v.set(bp[k*3],bp[k*3+1],bp[k*3+2]).applyMatrix4(m4);
+nv.set(bn[k*3],bn[k*3+1],bn[k*3+2]).applyMatrix3(nm).normalize();
+var o=(i*vc+k)*3;
+pos[o]=v.x;pos[o+1]=v.y;pos[o+2]=v.z;
+nrm[o]=nv.x;nrm[o+1]=nv.y;nrm[o+2]=nv.z;
+tnt[o]=cr;tnt[o+1]=cg;tnt[o+2]=cb;
+sed[i*vc+k]=sd;}}
+var g=new THREE.BufferGeometry();
+g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+g.setAttribute('normal',new THREE.BufferAttribute(nrm,3));
+g.setAttribute('aTint',new THREE.BufferAttribute(tnt,3));
+g.setAttribute('aSeed',new THREE.BufferAttribute(sed,1));
+g.computeBoundingSphere();
+base.dispose();
+return g;}
+/* --------------------------- construcción --------------------------- */
 function buildRift(){
-riftGlyphTex=makeFunGlyphTex();
 riftGroup=new THREE.Group();
-riftLayers=[];riftPipes=[];riftCoreMats=[];riftCorruptMats=[];
-riftBalloons=[];riftFaces=[];
-var scarGeo=new THREE.PlaneGeometry(1.9,2.55);
-var scarA=new THREE.Mesh(scarGeo,new THREE.MeshBasicMaterial({color:0x050008,fog:false}));
-var scarB=new THREE.Mesh(scarGeo,new THREE.MeshBasicMaterial({color:0x02000a,fog:false}));
-scarB.position.z=0.0006;
-riftGroup.add(scarA);riftGroup.add(scarB);
-riftLayers.push(scarB);
-var coreGeo=new THREE.PlaneGeometry(1.7,2.35);
-var coreA=new THREE.Mesh(coreGeo,makeRiftCoreMaterial(0.0));
-coreA.position.z=0.012;coreA.renderOrder=3;
-var coreB=new THREE.Mesh(coreGeo,makeRiftCoreMaterial(37.7));
-coreB.position.z=0.0126;coreB.renderOrder=4;
-riftGroup.add(coreA);riftGroup.add(coreB);
-riftLayers.push(coreB);
-riftCoreMats=[coreA.material,coreB.material];
-for(var i=0;i<7;i++){
-var r=0.05+Math.random()*0.05;
-var len=0.9+Math.random()*1.5;
-var geo=new THREE.CylinderGeometry(r,r*(0.7+Math.random()*0.5),len,5,3);
-var pipe=new THREE.Mesh(geo,makeCorruptMaterial(i*13.3));
-var a=(i/7)*Math.PI*2+Math.random()*0.5;
-var rad=0.85+Math.random()*0.8;
-pipe.position.set(Math.cos(a)*rad,0.35+Math.random()*1.7,Math.sin(a)*rad*0.5);
-pipe.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,Math.random()*Math.PI);
-pipe.userData.home=pipe.position.clone();
-pipe.userData.rot=pipe.rotation.clone();
-riftGroup.add(pipe);riftPipes.push(pipe);}
+riftMats=[];riftDispose=[];riftDialogs=[];riftBalloons=[];riftFaces=[];
+RIFT_HQ=!isTouch&&qLevel>=1;
+RU.pix.value=Math.max(1,renderer.getPixelRatio()||1);
+RU.pebble.value=makePebbleTex();riftDispose.push(RU.pebble.value);
+var W=POOL_W,L=POOL_L,C=POOL_C,HH=POOL_H,COP=0.075;
+var wallH=HH-POOL_FLOOR-COP;
+var curbMat =makeRiftStoneMat({scale:2.30,caustic:0.00,self:0.35,aberr:0.006});
+var innerMat=makeRiftStoneMat({scale:2.60,caustic:0.85,self:0.55,aberr:0.009});
+var floorMat=makeRiftStoneMat({scale:3.00,caustic:1.00,self:0.60,aberr:0.010});
+var metalMat=makeRiftStoneMat({scale:0.80,caustic:0.00,self:0.25,aberr:0.012,tint:0x94a0ab});
+var pillarMat=makeRiftPillarMat();
+var pebbleMat=makeRiftPebbleMat();
+var waterMat=makeRiftWaterMat(RIFT_HQ);
+var jetMat=makeRiftJetMat();
+var beamMat=makeRiftBeamMat();
+function add(m){riftGroup.add(m);riftDispose.push(m.geometry);return m;}
+/* —— losa de fondo —— */
+add(new THREE.Mesh(new THREE.BoxGeometry(W+2*C,POOL_FLOOR,L+2*C),curbMat)).position.y=POOL_FLOOR*0.5;
+/* —— muros de obra —— */
+add(new THREE.Mesh(new THREE.BoxGeometry(C,wallH,L+2*C),curbMat)).position.set( (W*0.5+C*0.5),POOL_FLOOR+wallH*0.5,0);
+add(new THREE.Mesh(new THREE.BoxGeometry(C,wallH,L+2*C),curbMat)).position.set(-(W*0.5+C*0.5),POOL_FLOOR+wallH*0.5,0);
+add(new THREE.Mesh(new THREE.BoxGeometry(W,wallH,C),curbMat)).position.set(0,POOL_FLOOR+wallH*0.5, (L*0.5+C*0.5));
+add(new THREE.Mesh(new THREE.BoxGeometry(W,wallH,C),curbMat)).position.set(0,POOL_FLOOR+wallH*0.5,-(L*0.5+C*0.5));
+/* —— revestimiento interior (recibe cáusticas y se ve mojado) —— */
+var linX=new THREE.PlaneGeometry(L-0.02,wallH),linZ=new THREE.PlaneGeometry(W-0.02,wallH);
+var l1=add(new THREE.Mesh(linX,innerMat));l1.position.set( (W*0.5-0.012),POOL_FLOOR+wallH*0.5,0);l1.rotation.y=-Math.PI/2;
+var l2=add(new THREE.Mesh(linX,innerMat));l2.position.set(-(W*0.5-0.012),POOL_FLOOR+wallH*0.5,0);l2.rotation.y= Math.PI/2;
+var l3=add(new THREE.Mesh(linZ,innerMat));l3.position.set(0,POOL_FLOOR+wallH*0.5, (L*0.5-0.012));l3.rotation.y= Math.PI;
+var l4=add(new THREE.Mesh(linZ,innerMat));l4.position.set(0,POOL_FLOOR+wallH*0.5,-(L*0.5-0.012));
+/* —— solera interior (fondo de piedritas con cáusticas) —— */
+var fl=new THREE.Mesh(new THREE.PlaneGeometry(W-0.02,L-0.02),floorMat);
+fl.rotation.x=-Math.PI/2;fl.position.y=POOL_FLOOR+0.014;add(fl);
+/* —— bordón / coronamiento de piedritas blancas —— */
+add(new THREE.Mesh(new THREE.BoxGeometry(C+0.12,COP,L+2*C+0.12),curbMat)).position.set( (W*0.5+C*0.5),HH-COP*0.5,0);
+add(new THREE.Mesh(new THREE.BoxGeometry(C+0.12,COP,L+2*C+0.12),curbMat)).position.set(-(W*0.5+C*0.5),HH-COP*0.5,0);
+add(new THREE.Mesh(new THREE.BoxGeometry(W,COP,C+0.12),curbMat)).position.set(0,HH-COP*0.5, (L*0.5+C*0.5));
+add(new THREE.Mesh(new THREE.BoxGeometry(W,COP,C+0.12),curbMat)).position.set(0,HH-COP*0.5,-(L*0.5+C*0.5));
+/* —— escalera de acero (pileta pública) —— */
+var railGeo=new THREE.CylinderGeometry(0.023,0.023,1.10,8);
+var rz=-(L*0.5-0.17);
+add(new THREE.Mesh(railGeo,metalMat)).position.set( 0.38,0.60,rz);
+add(new THREE.Mesh(railGeo,metalMat)).position.set(-0.38,0.60,rz);
+var barGeo=new THREE.CylinderGeometry(0.023,0.023,0.80,8);
+add(new THREE.Mesh(barGeo,metalMat)).position.set(0,1.12,rz);
+add(new THREE.Mesh(barGeo,metalMat)).position.set(0,0.74,rz);
+add(new THREE.Mesh(barGeo,metalMat)).position.set(0,0.38,rz);
+/* —— mini pilar glitcheado con aberración cromática —— */
+add(new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.39,0.13,18),curbMat)).position.set(POOL_PX,0.065,POOL_PZ);
+add(new THREE.Mesh(new THREE.CylinderGeometry(0.245,0.275,0.88,20,16),pillarMat)).position.set(POOL_PX,0.57,POOL_PZ);
+add(new THREE.Mesh(new THREE.CylinderGeometry(0.30,0.255,0.09,20),curbMat)).position.set(POOL_PX,1.055,POOL_PZ);
+add(new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.25,0.13,20),pillarMat)).position.set(POOL_PX,1.165,POOL_PZ);
+/* pico + chorro hacia el agua */
+var spoutFrom=new THREE.Vector3(POOL_PX-0.28,1.13,POOL_PZ);
+var land=new THREE.Vector3(0.85,POOL_FULL,0.55);
+var dir=new THREE.Vector3().subVectors(land,spoutFrom);
+var jlen=dir.length();dir.normalize();
+var jq=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+var stub=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.055,0.24,10),metalMat);
+stub.quaternion.copy(jq);
+stub.position.copy(spoutFrom).addScaledVector(dir,0.10);
+add(stub);
+riftJet=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.045,jlen,10,1,true),jetMat);
+riftJet.quaternion.copy(jq);
+riftJet.position.copy(spoutFrom).addScaledVector(dir,jlen*0.5);
+riftJet.renderOrder=5;add(riftJet);
+/* —— haz volumétrico —— */
+riftBeam=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,26,1,true),beamMat);
+riftBeam.scale.set(W*0.62,3.0,L*0.52);
+riftBeam.position.y=HH+1.50;
+riftBeam.renderOrder=6;add(riftBeam);
+/* —— lámina de agua —— */
+var segX=RIFT_HQ?48:22,segY=RIFT_HQ?72:32;
+riftWater=new THREE.Mesh(new THREE.PlaneGeometry(W-0.03,L-0.03,segX,segY),waterMat);
+riftWater.rotation.x=-Math.PI/2;
+riftWater.position.y=POOL_EMPTY;
+riftWater.renderOrder=7;add(riftWater);
+/* —— piedritas sueltas (malla fundida) —— */
+add(new THREE.Mesh(buildRiftPebbles(RIFT_HQ?430:200),pebbleMat));
+/* —— gotas del chorro —— */
+var ND=48;
+var dp=new Float32Array(ND*3);
+for(var i=0;i<ND;i++){dp[i*3+1]=-999;riftDropVel.push(new THREE.Vector3());riftDropLife.push(0);}
+var dg=new THREE.BufferGeometry();
+dg.setAttribute('position',new THREE.BufferAttribute(dp,3));
+riftDropPos=dp;
+riftDrops=new THREE.Points(dg,new THREE.PointsMaterial({
+map:makeDropTex(),size:0.055,color:0xc8ecff,opacity:0.9,
+transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}));
+riftDrops.frustumCulled=false;
+riftGroup.add(riftDrops);
+riftDispose.push(dg);riftDispose.push(riftDrops.material.map);riftDispose.push(riftDrops.material);
+/* —— colocación —— */
 var rp=findRiftPosition();
-riftPos=rp;
+riftPos={x:rp.x,z:rp.z};
+fitRift(rp.box);
 riftGroup.position.set(riftPos.x,0,riftPos.z);
-riftGroup.rotation.y=Math.random()*Math.PI;
+riftGroup.rotation.y=riftYaw;
+riftGroup.scale.setScalar(riftBaseScale);
 scene.add(riftGroup);
 buildRiftDialogs();
 buildRiftPartygoers();}
 function clearRift(){
 if(riftGroup){scene.remove(riftGroup);
-riftGroup.traverse(function(o){if(o.geometry)o.geometry.dispose();
-if(o.material&&o.material.dispose)o.material.dispose();});
-riftGroup=null;riftPipes=[];riftLayers=[];riftCoreMats=[];riftCorruptMats=[];
-riftBalloons=[];riftFaces=[];}
-for(var i=0;i<riftDialogs.length;i++){var d=riftDialogs[i];
-scene.remove(d.mesh);d.mesh.geometry.dispose();
-if(d.mesh.material.map)d.mesh.material.map.dispose();
-d.mesh.material.dispose();}
-riftDialogs=[];
-if(riftGlyphTex){riftGlyphTex.dispose();riftGlyphTex=null;}
+riftGroup.traverse(function(o){if(o.geometry)o.geometry.dispose();});
+riftGroup=null;}
+for(var i=0;i<riftDispose.length;i++){var d=riftDispose[i];if(d&&d.dispose)d.dispose();}
+riftDispose=[];riftMats=[];
+for(i=0;i<riftDialogs.length;i++){var dd=riftDialogs[i];
+scene.remove(dd.mesh);dd.mesh.geometry.dispose();
+if(dd.mesh.material.map)dd.mesh.material.map.dispose();
+dd.mesh.material.dispose();}
+riftDialogs=[];riftBalloons=[];riftFaces=[];
+riftWater=null;riftWaterMat=null;riftBeam=null;riftJet=null;
+riftDrops=null;riftDropPos=null;riftDropVel=[];riftDropLife=[];
 riftPhase='stable';riftShiftTimer=26;
 riftOpenAmt=0;riftDialogAmt=0;riftProx=0;}
 function updateRift(dt,t){
 if(!riftGroup)return;
 var dist=Math.hypot(player.x-riftPos.x,player.z-riftPos.z);
-riftProx=Math.max(0,Math.min(1,1-dist/12));
+riftProx=Math.max(0,Math.min(1,1-dist/14));
 var openT=riftOpen?1:0;
-riftOpenAmt+=(openT-riftOpenAmt)*Math.min(1,dt*1.5);
+/* la pileta se vacía / se llena despacio: es el "estabilizarse" de la grieta */
+riftOpenAmt+=(openT-riftOpenAmt)*Math.min(1,dt*0.55);
 var aggro=riftOpen?(0.55+0.45*Math.abs(Math.sin(t*0.7))+riftProx*0.3):0.22;
-for(var i=0;i<riftCoreMats.length;i++){var m=riftCoreMats[i];
-m.uniforms.uTime.value=t;
-m.uniforms.uOpen.value=0.22+riftOpenAmt*0.78;
-m.uniforms.uAggro.value=aggro;}
-for(i=0;i<riftCorruptMats.length;i++){var mm=riftCorruptMats[i];
-mm.uniforms.uTime.value=t;
-mm.uniforms.uAggro.value=0.3+aggro*0.7;}
-if(riftLayers.length>=2){
-riftLayers[0].position.z=0.0006+Math.sin(t*43.0)*0.0009;
-riftLayers[1].position.z=0.0126+Math.sin(t*31.0+2.0)*0.0011;}
-for(i=0;i<riftPipes.length;i++){var p=riftPipes[i];
-p.rotation.x=p.userData.rot.x+Math.sin(t*0.9+i)*0.25;
-if(Math.random()<dt*(0.5+aggro)){
-p.position.set(
-p.userData.home.x+(Math.random()-0.5)*0.22*aggro,
-p.userData.home.y+(Math.random()-0.5)*0.18*aggro,
-p.userData.home.z+(Math.random()-0.5)*0.14*aggro);}}
+/* ------------------------------ glitch ------------------------------ */
+if(riftEntering){riftGlitch=1;riftGlitchBurst=1;}
+else{
+riftGlitchT-=dt;
+if(riftGlitchT<=0){riftGlitchT=0.9+Math.random()*(riftOpen?2.6:5.5);
+riftGlitchBurst=0.12+Math.random()*(riftOpen?0.22:0.42);}
+riftGlitchBurst=Math.max(0,riftGlitchBurst-dt*0.55);
+riftGlitch=Math.min(1,riftGlitchBurst+(riftOpen?0.035:0.10)+riftProx*0.05);}
+/* ----------------------------- uniforms ----------------------------- */
+RU.time.value=t;RU.open.value=riftOpenAmt;RU.aggro.value=aggro;RU.glitch.value=riftGlitch;
+RU.cam.value.copy(camera.position);
+var fill=POOL_EMPTY+(POOL_FULL-POOL_EMPTY)*riftOpenAmt;
+if(riftWater)riftWater.position.y=fill;
+RU.waterY.value=fill;
+if(riftWaterMat)riftWaterMat.uniforms.uDepth.value=Math.max(0.15,fill-POOL_FLOOR);
+/* ------------------------ chorro, ondas, gotas ---------------------- */
+riftRippleT-=dt;
+if(riftRippleT<=0){riftRippleT=0.55+Math.random()*0.55;
+addRipple(0.85,0.55,0.75+Math.random()*0.6);}
+if(riftGlitchBurst>0.3&&Math.random()<0.25)
+addRipple((Math.random()-0.5)*POOL_W*0.7,(Math.random()-0.5)*POOL_L*0.7,0.5+Math.random()*0.5);
+if(riftDrops&&riftProx>0.015){
+riftDropT-=dt;
+if(riftDropT<=0){riftDropT=0.05+Math.random()*0.13;spawnDrop(0.85,fill,0.55);
+if(Math.random()<0.02)spawnDrop(0.85,fill,0.55);}
+updateDrops(dt);}
+/* --------------------------- fases / salto -------------------------- */
 if(riftOpen&&!riftEntering){
 if(riftPhase==='stable'){riftShiftTimer-=dt;
-if(riftShiftTimer<=0){riftPhase='closing';riftPhaseT=0;sndSizzle();}}
+if(riftShiftTimer<=0){riftPhase='closing';riftPhaseT=0;sndSizzle();riftGlitchBurst=0.55;}}
 else if(riftPhase==='closing'){riftPhaseT+=dt;
 var p2=Math.min(1,riftPhaseT/0.5);
-riftGroup.scale.setScalar(Math.max(0.001,1-p2));
+riftGroup.scale.setScalar(Math.max(0.001,riftBaseScale*(1-p2)));
 if(p2>=1){var nb=nearestBox(riftPos.x,riftPos.z);
 if(nb){var rng=mulberry32(hash2(SEED*71+Math.floor(t),3));
 var s=6+rng()*(nb.len-12);
 var tt=(rng()-0.5)*2*Math.max(1,nb.w-3);
 var PP=lw(nb,s,tt);
 riftPos={x:PP.x,z:PP.z};}
+fitRift(nb);
 riftGroup.position.set(riftPos.x,0,riftPos.z);
-riftGroup.rotation.y=Math.random()*Math.PI*2;
+riftGroup.rotation.y=riftYaw+(Math.random()-0.5)*0.35;
+riftGroup.scale.setScalar(0.001);
 riftPhase='gone';riftPhaseT=0;}}
 else if(riftPhase==='gone'){riftPhaseT+=dt;
-if(riftPhaseT>0.5){riftPhase='opening';riftPhaseT=0;
-sndRiftChime();sndRiftHum(0.09);}}
+if(riftPhaseT>0.5){riftPhase='opening';riftPhaseT=0;sndRiftChime();sndRiftHum(0.09);sndSplash();}}
 else if(riftPhase==='opening'){riftPhaseT+=dt;
-var p3=Math.min(1,riftPhaseT/0.7);
-var e=p3*p3*(3-2*p3);
-riftGroup.scale.setScalar(0.001+e*0.999);
-if(p3>=1){riftGroup.scale.setScalar(1);riftPhase='stable';
+var p3=Math.min(1,riftPhaseT/0.9);
+var e3=p3*p3*(3-2*p3);
+riftGroup.scale.setScalar(Math.max(0.001,riftBaseScale*e3));
+if(p3>=1){riftGroup.scale.setScalar(riftBaseScale);riftPhase='stable';
 riftShiftTimer=22+Math.random()*20;}}}
-else if(!riftEntering){var sc=1+Math.sin(t*2.1)*0.015*(riftOpen?1:0.3);
-riftGroup.scale.setScalar(sc);}
+else if(!riftEntering){var sc=1+Math.sin(t*2.1)*0.012*(riftOpen?1:0.3);
+riftGroup.scale.setScalar(riftBaseScale*sc);}
+/* ----------------------------- diálogos ----------------------------- */
 riftDialogAmt+=((riftOpen?1:0.3)-riftDialogAmt)*Math.min(1,dt*2);
-for(i=0;i<riftDialogs.length;i++){var d=riftDialogs[i];
+for(var i=0;i<riftDialogs.length;i++){
+var d=riftDialogs[i];
 var m2=d.mesh;
 d.blinkT-=dt;d.snapT-=dt;
 if(d.blinkT<=0){d.blinkT=0.09+Math.random()*0.3;
@@ -3565,10 +4198,15 @@ var op=d.baseOp*riftDialogAmt*(d.on?1:0);
 m2.material.opacity+=(op-m2.material.opacity)*Math.min(1,dt*14);
 m2.visible=m2.material.opacity>0.02;}
 updateRiftPartygoers(dt,t);
+/* ------------------------------ audio ------------------------------- */
 if(dist<8&&Math.random()<0.08)sndRiftHum(0.02+(1-dist/8)*(riftOpen?0.07:0.03));
 riftChimeT-=dt;
 if(dist<10&&riftChimeT<=0){riftChimeT=5+Math.random()*7;sndRiftChime();}
-if(!riftWon&&!riftEntering&&riftOpen&&(riftPhase==='stable'||riftPhase==='opening')&&dist<1.5){
+poolAmb=riftProx*riftProx*0.055*(0.35+0.65*riftOpenAmt);
+if(riftOpen&&riftProx>0.30){splashT-=dt;
+if(splashT<=0){splashT=1.1+Math.random()*1.9;sndSplash();}}
+/* ------------------------------ salida ------------------------------ */
+if(!riftWon&&!riftEntering&&riftOpen&&(riftPhase==='stable'||riftPhase==='opening')&&dist<riftTriggerR){
 if(shardCount>=SHARDS_NEEDED){startNoclipTransition();}
 else if(Math.random()<0.02)showToast('NECESITAS '+(SHARDS_NEEDED-shardCount)+' ESQUIRLAS MÁS');}}
 function startNoclipTransition(){
@@ -3680,7 +4318,7 @@ bpmValue+=(target-bpmValue)*0.06;
 bpmIndEl.textContent='FC '+Math.round(bpmValue);}
 function showObjective(){
 if(!objectiveEl)return;
-objectiveEl.textContent='OBJETIVO: RECOGE '+SHARDS_NEEDED+' ESQUIRLAS — LA GRIETA SE ESTABILIZA';
+objectiveEl.textContent='OBJETIVO: RECOGE '+SHARDS_NEEDED+' ESQUIRLAS — LA PISCINA SE LLENA';
 objectiveEl.classList.add('show');
 setTimeout(function(){objectiveEl.classList.remove('show');},7000);}
 var startOv=document.getElementById('startOv'),hud=document.getElementById('hud'),
@@ -4002,6 +4640,11 @@ buildRift();
 updateShardHud();
 updateLivesHud();
 /* aplicar opts antes del primer frame visible */
+applyOpts();
+loop();})();
+</script>
+</body>
+</html>ame visible */
 applyOpts();
 loop();})();
 </script>

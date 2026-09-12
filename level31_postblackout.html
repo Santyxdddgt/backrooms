@@ -1000,6 +1000,8 @@ x.stroke();
 var t=new THREE.CanvasTexture(c);
 t.magFilter=THREE.LinearFilter;
 return t;}
+/* generador pseudoaleatorio con semilla (faltaba: rompía buildRift al iniciar) */
+function rngSeed(s){return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
 function makePartyWindowTexture(title,msg,seed){
 var rnd=rngSeed(seed);
 var c=document.createElement('canvas');c.width=256;c.height=144;
@@ -1099,8 +1101,8 @@ GLSL_LIB,
 'void main(){',
 '  vUv=uv; vec2 p=position.xy; vec3 pos=position;',
 '  float row=floor(uv.y*46.0);',
-'  float slice=step(0.90,hash21(vec2(row,floor(uTime*11.0))));',
-'  float tear=(hash21(vec2(row,floor(uTime*19.0)))-0.5)*(0.09+0.50*uGlitch);',
+'  float slice=step(0.90-0.35*uGlitch,hash21(vec2(row,floor(uTime*11.0))));',
+'  float tear=(hash21(vec2(row,floor(uTime*19.0)))-0.5)*(0.09+1.10*uGlitch);',
 '  pos.x+=slice*tear;',
 '  float jump=step(0.965,hash21(vec2(floor(uTime*7.0),3.0)));',
 '  pos.y+=jump*(hash11(floor(uTime*7.0))-0.5)*0.45*uGlitch;',
@@ -1152,8 +1154,8 @@ GLSL_LIB,
 '  if(dot(N,V)<0.0)N=-N;',
 '  float ndv=clamp(dot(N,V),0.0,1.0);',
 '  float rowF=floor(gl_FragCoord.y/(13.0*max(uPix,0.75)));',
-'  float sliceA=step(0.92,hash21(vec2(rowF,floor(uTime*12.0))));',
-'  float sh=(hash21(vec2(rowF,floor(uTime*27.0)))-0.5)*(0.08+0.45*uGlitch)*sliceA;',
+'  float sliceA=step(0.92-0.34*uGlitch,hash21(vec2(rowF,floor(uTime*12.0))));',
+'  float sh=(hash21(vec2(rowF,floor(uTime*27.0)))-0.5)*(0.08+0.95*uGlitch)*sliceA;',
 '  vec3 sd=cross(vec3(0.0,1.0,0.0),V);',
 '  sd=(length(sd)<0.001)?vec3(1.0,0.0,0.0):normalize(sd);',
 '  N=normalize(N+sd*sh*0.85);',
@@ -1201,9 +1203,9 @@ GLSL_LIB,
 '  float foamC=smoothstep(0.026,0.052,vH);',
 '  float foam=clamp(foamE*0.85+foamC*0.45,0.0,1.0)*(0.30+0.70*uOpen);',
 '  col=mix(col,vec3(0.86,0.93,0.96),clamp(foam,0.0,1.0)*0.80);',
-'  float band=step(0.90,hash21(vec2(rowF,floor(uTime*17.0))));',
+'  float band=step(0.90-0.48*uGlitch,hash21(vec2(rowF,floor(uTime*17.0))));',
 '  vec3 gcol=mix(vec3(0.20,1.0,0.92),vec3(1.0,0.22,0.72),hash21(vec2(floor(uTime*8.0),5.0)));',
-'  col+=gcol*band*uGlitch*0.42;',
+'  col+=gcol*band*uGlitch*0.60;',
 '  col=mix(col,col.gbr,step(0.975,hash21(vec2(floor(uTime*5.0),9.0)))*uGlitch);',
 '  col*=0.94+0.06*sin(gl_FragCoord.y*1.7+uTime*40.0);',
 '  col+=vec3(0.045,0.15,0.19)*uSelf*uOpen*(0.62+0.38*sin(uTime*1.3));',
@@ -1340,10 +1342,13 @@ GLSL_LIB,
 '  tex=vec3(texture2D(uMap,st+ao).r, texture2D(uMap,st).g, texture2D(uMap,st-ao).b);',
 '  /* doble imagen fantasma magenta / cian */',
 '  float ghost=step(0.55,uGlitch)*uGlitch;',
-'  vec2 go=vec2(0.22*uGlitch,0.0);',
+'  vec2 go=vec2(0.30*uGlitch,0.0);',
 '  float gr=texture2D(uMap,st+go).g, gb=texture2D(uMap,st-go).g;',
 '  tex+=vec3(0.85,0.15,0.70)*gr*ghost*0.55;',
 '  tex+=vec3(0.15,0.85,0.95)*gb*ghost*0.55;',
+'  /* amplificar la separación cromática: franjas R/B bien visibles */',
+'  float tl=dot(tex,vec3(0.3333));',
+'  tex=vec3(tl)+(tex-vec3(tl))*(1.65+1.35*uGlitch);',
 '#else',
 '  tex=texture2D(uMap,st).rgb;',
 '  tex+=vec3(0.6,0.2,0.7)*step(0.6,uGlitch)*uGlitch*0.35;',
@@ -3715,7 +3720,7 @@ var RIFT_HQ=true;
 var riftMats=[], riftDispose=[], riftDrops=null, riftDropPos=null, riftDropVel=[], riftDropLife=[];
 var riftWater=null, riftWaterMat=null, riftBeam=null, riftJet=null;
 var riftBaseScale=1, riftYaw=0, riftTriggerR=2.2;
-var riftGlitch=0, riftGlitchT=1.2, riftGlitchBurst=0;
+var riftGlitch=0, riftGlitchT=1.2, riftGlitchBurst=0, poolNearT=false;
 var riftRipples=[new THREE.Vector4(),new THREE.Vector4(),new THREE.Vector4(),new THREE.Vector4()];
 var riftRippleI=0, riftRippleT=0.4, riftDropT=0.2, splashT=0;
 var poolAmb=0;
@@ -3912,7 +3917,7 @@ function makeRiftPillarMat(){
 var m=new THREE.ShaderMaterial({
 uniforms:{uTime:RU.time,uOpen:RU.open,uGlitch:RU.glitch,uCam:RU.cam,
 uFogCol:RU.fogCol,uFogD:RU.fogD,uWaterY:RU.waterY,
-uAberr:{value:0.020},uSelf:{value:0.7},uPebScale:{value:2.20},
+uAberr:{value:0.110},uSelf:{value:0.7},uPebScale:{value:2.20},
 uTint:{value:new THREE.Color(0xfff4e6)},uMap:RU.pebble},
 defines:RIFT_HQ?{HQ:1}:{},
 vertexShader:PILLAR_VERT,fragmentShader:PILLAR_FRAG,side:THREE.DoubleSide,fog:false});
@@ -3920,7 +3925,7 @@ return riftRegMat(m);}
 function makeRiftPebbleMat(){
 var m=new THREE.ShaderMaterial({
 uniforms:{uTime:RU.time,uOpen:RU.open,uGlitch:RU.glitch,uCam:RU.cam,
-uFogCol:RU.fogCol,uFogD:RU.fogD,uAberr:{value:0.030}},
+uFogCol:RU.fogCol,uFogD:RU.fogD,uAberr:{value:0.045}},
 defines:RIFT_HQ?{HQ:1}:{},
 vertexShader:PEBBLE_VERT,fragmentShader:PEBBLE_FRAG,fog:false});
 return riftRegMat(m);}

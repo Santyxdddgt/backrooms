@@ -4203,6 +4203,8 @@ if(dist<8&&Math.random()<0.08)sndRiftHum(0.02+(1-dist/8)*(riftOpen?0.07:0.03));
 riftChimeT-=dt;
 if(dist<10&&riftChimeT<=0){riftChimeT=5+Math.random()*7;sndRiftChime();}
 poolAmb=riftProx*riftProx*0.055*(0.35+0.65*riftOpenAmt);
+if(riftOpen&&!poolNearT&&dist<7){poolNearT=true;
+showToast('LA PILETA TE ESPERA — METETE');}
 if(riftOpen&&riftProx>0.30){splashT-=dt;
 if(splashT<=0){splashT=1.1+Math.random()*1.9;sndSplash();}}
 /* ------------------------------ salida ------------------------------ */

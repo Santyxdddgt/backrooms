@@ -3360,7 +3360,186 @@ var lap=AC.createBufferSource();lap.buffer=noiseBuf;lap.loop=true;lap.playbackRa
 var lapF=AC.createBiquadFilter();lapF.type='lowpass';lapF.frequency.value=460;
 lapG=AC.createGain();lapG.gain.value=0;
 lap.connect(lapF);lapF.connect(lapG);lapG.connect(master);lap.start();
-}
+/* ===== capa 7: presencia de terror post-blackout (bus propio -> master) ===== */
+initHorrorAmb();}
+/* ================= [POST-BLACKOUT] PRESENCIA SONORA DE TERROR =================
+   Capa ambiental exclusiva de este nivel (Nivel 31 · modo post-blackout: el
+   html.blackout es permanente aquí y la exploración real es started &&
+   !surv.dead && state 'play'|'reviving'; título, muerte, noclip y victoria
+   quedan excluidos por esa misma lógica, sin crear estados paralelos).
+   No duplica AudioContext ni master: todo pasa por el bus existente, respeta
+   sndOn, la suspensión por pestaña y escala con ambientMul ('Volumen ambiente').
+   Sonido: subdrone que respira, clúster disonante en deriva estéreo, aire
+   oscuro con barrido lentísimo, pulso casi imperceptible, grano fantasma y
+   resonancias lejanas esporádicas sobre una sala enorme sintética. Evolución
+   procedural con silencios parciales; tensión basal apoyada en la lógica ya
+   existente del juego (ENT.state / isBlackoutActive) para el acecho. */
+var HOR=null;
+function makeHorrorIR(){/* IR procedural: espacio enorme, vacío y frío (2.6s) */
+var sr=AC.sampleRate,len=Math.floor(sr*2.6),ir=AC.createBuffer(2,len,sr);
+for(var ch=0;ch<2;ch++){var d=ir.getChannelData(ch);
+for(var i=0;i<len;i++){var x=i/len;
+d[i]=(Math.random()*2-1)*Math.pow(1-x,2.2)*(x<0.02?x/0.02:1)*0.55;}
+var taps=[0.011,0.019,0.031,0.047,0.069,0.093];/* primeras reflexiones tenues */
+for(var k=0;k<taps.length;k++){var n=Math.floor(sr*taps[k]*(1+ch*0.11));
+if(n<len)d[n]+=(k%2?-0.3:0.26);}}
+return ir;}
+function initHorrorAmb(){if(!AC||HOR)return;
+HOR={acc:0,dirT:2,voidT:0,shotT:1e9,shotBusy:false,gate:false,tens:0,lastT:AC.currentTime};
+/* bus de presencia: sólo abre/cierra con fades largos (nunca cortes/clicks) */
+HOR.bus=AC.createGain();HOR.bus.gain.value=0.0001;HOR.bus.connect(master);
+/* nivel global de la capa: ambientMul x tensión basal de acecho (ver update) */
+HOR.mix=AC.createGain();HOR.mix.gain.value=0.085*ambientMul;HOR.mix.connect(HOR.bus);
+/* espacio enorme (convolver + IR procedural) reservado a lo lejano */
+HOR.wet=null;
+try{var conv=AC.createConvolver();conv.buffer=makeHorrorIR();
+var convG=AC.createGain();convG.gain.value=0.85;
+conv.connect(convG);convG.connect(HOR.mix);HOR.wet=conv;}catch(e){}
+/* --- A: subdrone 29/31.2Hz: batido lentísimo, "respiración del vacío" --- */
+var subLP=AC.createBiquadFilter();subLP.type='lowpass';subLP.frequency.value=115;subLP.Q.value=0.6;
+HOR.subG=AC.createGain();HOR.subG.gain.value=0.5;subLP.connect(HOR.subG);HOR.subG.connect(HOR.mix);
+HOR.subOscs=[];
+var sf=[29,31.18,58.3],stf=['sine','sine','triangle'],svl=[1,1,0.12];
+for(var i=0;i<3;i++){var o=AC.createOscillator();o.type=stf[i];o.frequency.value=sf[i];
+var og=AC.createGain();og.gain.value=svl[i];o.connect(og);og.connect(subLP);o.start();HOR.subOscs.push(o);}
+var lA=AC.createOscillator();lA.frequency.value=0.019;
+var lAg=AC.createGain();lAg.gain.value=9;lA.connect(lAg);lAg.connect(HOR.subOscs[1].detune);lA.start();
+/* --- B: clúster disonante (A1 + tritono + quinta) que emerge y se disuelve --- */
+HOR.clusG=AC.createGain();HOR.clusG.gain.value=0.0001;
+var clusLP=AC.createBiquadFilter();clusLP.type='lowpass';clusLP.frequency.value=235;clusLP.Q.value=1.1;
+clusLP.connect(HOR.clusG);
+if(AC.createStereoPanner){var cp=AC.createStereoPanner();
+HOR.clusG.connect(cp);cp.connect(HOR.mix);
+var lP=AC.createOscillator();lP.frequency.value=0.011;
+var lPg=AC.createGain();lPg.gain.value=0.3;lP.connect(lPg);lPg.connect(cp.pan);lP.start();}
+else HOR.clusG.connect(HOR.mix);
+HOR.clusOscs=[];
+var cf=[55,61.74,82.4],cgl=[0.5,0.3,0.38];
+for(var i=0;i<3;i++){var o=AC.createOscillator();o.type='triangle';o.frequency.value=cf[i];
+o.detune.value=[-11,7,15][i];var og=AC.createGain();og.gain.value=cgl[i];
+o.connect(og);og.connect(clusLP);o.start();HOR.clusOscs.push(o);}
+/* --- C: aire oscuro filtrado; barrido y rate con deriva anti-loop --- */
+var airS=AC.createBufferSource();airS.buffer=noiseBuf;airS.loop=true;airS.playbackRate.value=0.33;
+HOR.airBP=AC.createBiquadFilter();HOR.airBP.type='bandpass';HOR.airBP.frequency.value=165;HOR.airBP.Q.value=0.8;
+HOR.airLP=AC.createBiquadFilter();HOR.airLP.type='lowpass';HOR.airLP.frequency.value=520;
+HOR.airG=AC.createGain();HOR.airG.gain.value=0.55;
+airS.connect(HOR.airBP);HOR.airBP.connect(HOR.airLP);HOR.airLP.connect(HOR.airG);HOR.airG.connect(HOR.mix);airS.start();
+var lF=AC.createOscillator();lF.frequency.value=0.0061;
+var lFg=AC.createGain();lFg.gain.value=88;lF.connect(lFg);lFg.connect(HOR.airBP.frequency);lF.start();
+var lR=AC.createOscillator();lR.frequency.value=0.0083;
+var lRg=AC.createGain();lRg.gain.value=0.02;lR.connect(lRg);lRg.connect(airS.playbackRate);lR.start();
+/* --- D: pulso lentísimo a 41Hz; su ritmo deriva para no delatar el motor --- */
+var pulO=AC.createOscillator();pulO.type='sine';pulO.frequency.value=41.2;
+var pulV=AC.createGain();pulV.gain.value=0.5;
+HOR.pulL=AC.createOscillator();HOR.pulL.type='triangle';HOR.pulL.frequency.value=0.105;
+var pulLg=AC.createGain();pulLg.gain.value=0.44;HOR.pulL.connect(pulLg);pulLg.connect(pulV.gain);
+HOR.pulG=AC.createGain();HOR.pulG.gain.value=0.13;
+pulO.connect(pulV);pulV.connect(HOR.pulG);HOR.pulG.connect(HOR.mix);
+pulO.start();HOR.pulL.start();
+/* --- E: grano fantasma; estática tenuísima casi siempre apagada --- */
+var dstS=AC.createBufferSource();dstS.buffer=noiseBuf;dstS.loop=true;dstS.playbackRate.value=1.85;
+var dstBP=AC.createBiquadFilter();dstBP.type='bandpass';dstBP.frequency.value=3400;dstBP.Q.value=7;
+HOR.dstG=AC.createGain();HOR.dstG.gain.value=0.0001;
+dstS.connect(dstBP);dstBP.connect(HOR.dstG);
+if(AC.createStereoPanner){var dp=AC.createStereoPanner();dp.pan.value=0.4;
+HOR.dstG.connect(dp);dp.connect(HOR.mix);}else HOR.dstG.connect(HOR.mix);
+dstS.start();
+var lD=AC.createOscillator();lD.frequency.value=0.043;
+var lDg=AC.createGain();lDg.gain.value=0.09;lD.connect(lDg);lDg.connect(dstS.playbackRate);lD.start();}
+function horrorShot(){/* una resonancia lejana como máximo; jamás un susto */
+if(!AC||!HOR||HOR.shotBusy||AC.state!=='running')return;
+HOR.shotBusy=true;
+var t=AC.currentTime,out=HOR.mix,nodes=[];
+if(AC.createStereoPanner){var pn=AC.createStereoPanner();
+pn.pan.value=(Math.random()*2-1)*0.85;pn.connect(HOR.mix);out=pn;nodes.push(pn);}
+var g=AC.createGain();g.connect(out);nodes.push(g);
+var wg=null;
+if(HOR.wet){wg=AC.createGain();wg.gain.value=0.5;g.connect(wg);wg.connect(HOR.wet);nodes.push(wg);}
+var srcs=[],dur=4,peak=0.012,atk=0.3,kind=Math.floor(Math.random()*4);
+var flt=AC.createBiquadFilter();flt.connect(g);nodes.push(flt);
+if(kind===0){/* chapa o estructura golpeada lejos, en algún punto del nivel */
+var f=[174.6,196,233.1,277.2][Math.floor(Math.random()*4)];
+dur=3.4+Math.random()*2.2;atk=0.05+Math.random()*0.16;peak=0.008+Math.random()*0.008;
+flt.type='bandpass';flt.frequency.value=f*1.35;flt.Q.value=2.2;
+for(var i=0;i<2;i++){var o=AC.createOscillator();o.type='sine';
+o.frequency.value=f*(i?1.503:1);o.detune.value=(Math.random()-0.5)*9;
+var og=AC.createGain();og.gain.value=i?0.32:1;o.connect(og);og.connect(flt);
+o.start(t);o.stop(t+dur+0.6);srcs.push(o);}}
+else if(kind===1){/* lámina suspendida vibrando: ataque lentísimo, cola enorme */
+var f2=[87.3,98,116.5][Math.floor(Math.random()*3)];
+dur=5.5+Math.random()*2.5;atk=0.9+Math.random()*0.9;peak=0.006+Math.random()*0.005;
+flt.type='lowpass';flt.frequency.value=430;flt.Q.value=0.7;
+if(wg)wg.gain.value=0.9;
+var hm=[1,2.02,3.11],hvl=[1,0.25,0.1];
+for(var j=0;j<3;j++){var o2=AC.createOscillator();o2.type='sine';o2.frequency.value=f2*hm[j];
+var og2=AC.createGain();og2.gain.value=hvl[j];o2.connect(og2);og2.connect(flt);
+o2.start(t);o2.stop(t+dur+0.6);srcs.push(o2);}}
+else if(kind===2){/* golpe hueco tras una pared: grave, seco, lejano */
+dur=1.1;atk=0.09+Math.random()*0.08;peak=0.018+Math.random()*0.012;
+flt.type='lowpass';flt.frequency.value=185;flt.Q.value=0.7;
+if(wg)wg.gain.value=0.35;
+var o3=AC.createOscillator();o3.type='sine';
+o3.frequency.setValueAtTime(108,t);o3.frequency.exponentialRampToValueAtTime(62,t+0.4);
+o3.connect(flt);o3.start(t);o3.stop(t+dur);srcs.push(o3);}
+else{/* estática con forma de voz a lo lejos: algo se mueve en el vacío */
+dur=1.8+Math.random()*1.6;atk=0.5+Math.random()*0.6;peak=0.005+Math.random()*0.006;
+flt.type='bandpass';flt.frequency.value=900+Math.random()*700;flt.Q.value=1.4;
+if(wg)wg.gain.value=0.75;
+var nz=AC.createBufferSource();nz.buffer=noiseBuf;nz.loop=true;nz.playbackRate.value=0.7;
+nz.connect(flt);nz.start(t,Math.random());nz.stop(t+dur+0.5);srcs.push(nz);}
+g.gain.setValueAtTime(0.0001,t);
+g.gain.linearRampToValueAtTime(peak,t+atk);
+g.gain.setTargetAtTime(0.0001,t+atk,dur*0.3);
+var last=srcs[srcs.length-1];
+last.onended=function(){HOR.shotBusy=false;
+for(var n=0;n<nodes.length;n++){try{nodes[n].disconnect();}catch(e){}}};
+setTimeout(function(){HOR.shotBusy=false;},(dur+2)*1000);}
+function updateHorrorAmb(dt){
+if(!AC||!HOR||AC.state!=='running')return;
+/* única condición: exploración post-blackout de ESTE nivel (sin lógica paralela) */
+var want=started&&!surv.dead&&(state==='play'||state==='reviving');
+if(want!==HOR.gate){HOR.gate=want;
+HOR.bus.gain.setTargetAtTime(want?1:0.0001,AC.currentTime,want?4.5:1.4);
+if(want)HOR.shotT=clockT+16+Math.random()*24;}
+if(!want)return;
+HOR.acc+=dt;if(HOR.acc<0.45)return;
+var tick=HOR.acc;HOR.acc=0;
+var t=AC.currentTime;
+/* tensión basal de acecho: usa la lógica existente (ENT.state / apagón);
+   no anuncia al enemigo, sólo oscurece un poco la textura mientras ronda */
+var tens=0;
+if(ENT.state==='chase')tens=0.42;
+else if(ENT.state==='windup')tens=0.34;
+else if(ENT.state==='lurk')tens=0.2;
+else if(ENT.state!=='hidden'&&ENT.state!=='kill'){
+var dE=Math.hypot(player.x-ENT.x,player.z-ENT.z);
+tens=0.16*Math.max(0,1-dE/22);}
+if(isBlackoutActive())tens=Math.max(tens,0.3);
+var rd=Math.min(2,t-HOR.lastT);HOR.lastT=t;
+HOR.tens+=(tens-HOR.tens)*Math.min(1,rd/5);
+HOR.mix.gain.setTargetAtTime(0.085*ambientMul*(1+HOR.tens*1.5),t,3.2);
+HOR.airLP.frequency.setTargetAtTime(isBlackoutActive()?300:520,t,4);
+/* director procedural: objetivos lentos + silencios parciales (el vacío habla) */
+HOR.dirT-=tick;
+if(HOR.dirT<=0){HOR.dirT=9+Math.random()*7;
+if(HOR.voidT<=0&&Math.random()<0.15)HOR.voidT=16+Math.random()*20;
+var inVoid=HOR.voidT>0;
+HOR.subG.gain.setTargetAtTime(inVoid?0.42+Math.random()*0.08:0.5+Math.random()*0.26,t,6);
+HOR.clusG.gain.setTargetAtTime(inVoid?0.0001:0.12+Math.random()*0.55,t,7);
+HOR.airG.gain.setTargetAtTime(inVoid?0.16:0.32+Math.random()*0.55,t,6);
+HOR.pulG.gain.setTargetAtTime(inVoid?0.05:0.08+Math.random()*0.13,t,5);
+HOR.dstG.gain.setTargetAtTime(inVoid?0.0001:Math.random()<0.55?0.0001:0.06+Math.random()*0.22,t,4);
+/* micro-variación tímbrica: batido, filtro, ritmo del pulso, afinación */
+HOR.subOscs[1].frequency.setTargetAtTime(31.18+(Math.random()-0.5)*0.5,t,9);
+HOR.airBP.frequency.setTargetAtTime(150+Math.random()*90,t,10);
+HOR.pulL.frequency.setTargetAtTime(0.07+Math.random()*0.075,t,12);
+HOR.clusOscs[1].detune.setTargetAtTime(7+(Math.random()-0.5)*22,t,10);}
+if(HOR.voidT>0)HOR.voidT=Math.max(0,HOR.voidT-tick);
+/* resonancias lejanas esporádicas; más seguidas durante un apagón activo,
+   cuando "algo" parece acercarse */
+if(clockT>=HOR.shotT&&!HOR.shotBusy){horrorShot();
+var bk=isBlackoutActive();
+HOR.shotT=clockT+(bk?10+Math.random()*14:20+Math.random()*34);}}
 function toggleSnd(){sndOn=!sndOn;initAudio();
 btnSnd.classList.toggle('active',sndOn);
 document.getElementById('sndWave').style.opacity=sndOn?'1':'0.25';
@@ -4605,6 +4784,7 @@ updateWarm(t,mul);updateSpots(t,mul);updatePetals(t);updateBalls(t);
 updateShadow(dt);
 staticTex.offset.x=(t*0.07)%1;staticTex.offset.y=(t*0.023+Math.sin(t*0.7)*0.2)%1;
 updateThemeAudio(dt);
+updateHorrorAmb(dt);
 renderMirror();
 
 /* ============ [VHS] pipeline de post-proceso heredado de Level 31 ============ */

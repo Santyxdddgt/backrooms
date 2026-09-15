@@ -919,7 +919,7 @@ body.touch #radar-hint { display: none; }
 <div id="btn-pause" class="tbtn"><span class="tbtn-icon">❚❚</span></div>
 </div>
 <!-- BOTÓN TOGGLE DEV -->
-<button id="dev-toggle" class="hidden" aria-label="Alternar panel DEV">⚙</button>
+<button id="dev-toggle" class="hidden" aria-label="Alternar panel DEV" aria-expanded="false">⚙</button>
 <div id="dev-ui" class="hidden collapsed">
 <div class="dev-title">■ MODO DEV — INMORTAL</div>
 <div class="dev-title">VUELO (ESPACIO / C)</div>
@@ -4552,7 +4552,24 @@ const RADAR_ACTIVE = 3.2;
 let radarCd = 0;
 let radarLeft = 0;
 let touchRadarRequest = false;
-function lockPointer() { canvas.requestPointerLock(); }
+function lockPointer() {
+// El panel DEV necesita un cursor real para poder recibir clicks. Nunca
+// volvemos a capturar el ratón mientras está abierto.
+if (devMode && devPanelOpen) return false;
+try {
+const request = canvas.requestPointerLock();
+if (request && typeof request.catch === 'function') request.catch(() => {});
+return true;
+} catch (_) {
+return false;
+}
+}
+// En DEV el click sobre la escena sigue activando el shiftlock, pero no
+// puede hacerlo si el usuario está interactuando con el panel.
+canvas.addEventListener('click', () => {
+if (IS_TOUCH || state !== 'play' || (devMode && devPanelOpen)) return;
+lockPointer();
+});
 async function tryFullscreenLandscape() {
 try {
 if (!document.fullscreenElement && document.documentElement.requestFullscreen)
@@ -5392,15 +5409,26 @@ startDying(e);
 }
 // Lógica de plegado del panel DEV
 let devPanelOpen = false;
-function toggleDevPanel() {
-devPanelOpen = !devPanelOpen;
+function setDevPanelOpen(open) {
+devPanelOpen = !!open;
 if (devPanelOpen) {
+// Pointer Lock deja el cursor invisible y hace que el canvas capture los
+// clicks. Soltarlo antes de mostrar el panel garantiza que sus botones
+// vuelvan a ser interactivos en PC.
+if (document.pointerLockElement && document.exitPointerLock) {
+document.exitPointerLock();
+}
 devUI.classList.remove('collapsed');
 devToggle.textContent = '✕';
+devToggle.setAttribute('aria-expanded', 'true');
 } else {
 devUI.classList.add('collapsed');
 devToggle.textContent = '⚙';
+devToggle.setAttribute('aria-expanded', 'false');
 }
+}
+function toggleDevPanel() {
+setDevPanelOpen(!devPanelOpen);
 }
 devToggle.addEventListener('click', (e) => {
 e.stopPropagation();
@@ -5416,18 +5444,14 @@ player.flyH = EYE_HEIGHT;
 updateLivesHud();
 entities.stalker.wake();
 entities.hound.wake();
-if (IS_TOUCH) { tryFullscreenLandscape(); enterPlay(); }
-else {
-// [FIX] DEV en PC: bloquea el ratón (shiftlock) igual que la cinta normal.
-lockPointer();
-// Si el navegador rechaza el bloqueo, entra igual para no quedarse en el menú.
-setTimeout(() => { if (state !== 'play' && !document.pointerLockElement) enterPlay(); }, 450);
-}
+// En DEV no capturamos el ratón al entrar: el panel debe poder abrirse y
+// usarse inmediatamente en PC. El shiftlock sigue disponible al hacer click
+// en la escena cuando el panel está cerrado.
+if (IS_TOUCH) tryFullscreenLandscape();
+enterPlay();
 devUI.classList.remove('hidden');
 devToggle.classList.remove('hidden');
-devPanelOpen = false;
-devUI.classList.add('collapsed');
-devToggle.textContent = '⚙';
+setDevPanelOpen(true);
 toast('DEV ACTIVO — INMORTAL · VUELO: ESPACIO/C');
 }
 function enterPlay() {
@@ -5634,9 +5658,9 @@ camera.fov = 72;
 camera.updateProjectionMatrix();
 lives = 1;
 devMode = false;
-devUI.classList.add('hidden', 'collapsed');
+devUI.classList.add('hidden');
 devToggle.classList.add('hidden');
-devPanelOpen = false;
+setDevPanelOpen(false);
 updateLivesHud();
 shardCount = 0;
 riftOpen = false;
@@ -5671,8 +5695,17 @@ deathScreen.addEventListener('click', () => { fullReset(); startFromOverlay(); }
 winScreen.addEventListener('click', () => { fullReset(); startFromOverlay(); });
 document.addEventListener('pointerlockchange', () => {
 if (IS_TOUCH) return;
-if (document.pointerLockElement === canvas) enterPlay();
-else if (state === 'play') enterPause();
+if (document.pointerLockElement === canvas) {
+enterPlay();
+} else if (state === 'play') {
+// En DEV, ESC o la salida del lock devuelve el cursor al usuario y abre
+// el panel en lugar de pausar o dejar el juego atrapado en shiftlock.
+if (devMode) {
+setDevPanelOpen(true);
+return;
+}
+enterPause();
+}
 });
 function showObjective() {
 objectiveShown = true;
@@ -5737,9 +5770,9 @@ bloodEl.classList.remove('show');
 reviveTxtEl.classList.remove('show');
 bpmInd.textContent = 'FC 0';
 touchUI.classList.add('hidden');
-devUI.classList.add('hidden', 'collapsed');
+devUI.classList.add('hidden');
 devToggle.classList.add('hidden');
-devPanelOpen = false;
+setDevPanelOpen(false);
 deathScreen.classList.remove('hidden');
 hud.classList.add('hidden');
 }

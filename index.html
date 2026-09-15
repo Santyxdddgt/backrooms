@@ -5416,8 +5416,13 @@ player.flyH = EYE_HEIGHT;
 updateLivesHud();
 entities.stalker.wake();
 entities.hound.wake();
-if (IS_TOUCH) { tryFullscreenLandscape(); }
-enterPlay();
+if (IS_TOUCH) { tryFullscreenLandscape(); enterPlay(); }
+else {
+// [FIX] DEV en PC: bloquea el ratón (shiftlock) igual que la cinta normal.
+lockPointer();
+// Si el navegador rechaza el bloqueo, entra igual para no quedarse en el menú.
+setTimeout(() => { if (state !== 'play' && !document.pointerLockElement) enterPlay(); }, 450);
+}
 devUI.classList.remove('hidden');
 devToggle.classList.remove('hidden');
 devPanelOpen = false;

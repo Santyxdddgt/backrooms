@@ -35,3 +35,4 @@
 - Sesión persistida en `localStorage`: `BACKROOMS_MP_SESSION` (roomId, playerId, token, name).
 - El parche anti-carrera de WebSocket (3 guards: `closedByUs`, `ws !== st.ws`, readyState) está aplicado en ambos clientes.
 - `BACKROOMS_SAVE_V1` (progreso individual) NO se modifica jamás por el modo multijugador.
+Multi Caca Doors: https://backrooms-mp.onrender.com/

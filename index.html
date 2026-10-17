@@ -101,6 +101,9 @@ font-family: "Metal Mania", "Courier New", cursive;
 #start h1 {
 font-family: "Rubik Broken Fax", "Special Elite", "Courier New", monospace;
 letter-spacing: 0.12em;
+/* escala relativa al ancho de su columna (.start-left es container inline-size)
+   para que el logo quepa siempre y no invada los tabs/brief */
+font-size: clamp(1.5rem, 12cqw, 3.8rem);
 }
 #death h1 {
 font-family: "Rubik Pixels", "Courier New", monospace;
@@ -204,13 +207,13 @@ position: relative;
 z-index: 1;
 margin: auto;
 display: grid;
-grid-template-columns: minmax(205px, 34%) minmax(290px, 1fr);
+grid-template-columns: minmax(205px, min(52%, calc(100% - 314px))) minmax(290px, 1fr);
 gap: 0.9rem 1.5rem;
 align-items: center;
 width: min(58rem, 100%);
 max-height: 100%;
 }
-.start-left { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+.start-left { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; container-type: inline-size; }
 .start-left .sub { font-size: 0.78rem; letter-spacing: 0.3em; text-align: left; }
 .start-cta {
 border: 1px solid rgba(207, 194, 122, 0.5);
@@ -335,6 +338,7 @@ animation: fluorflick 3.9s infinite steps(1);
 }
 @media (orientation: landscape) and (max-height: 480px) {
 h1 { font-size: clamp(1.5rem, 8vh, 2.5rem); }
+#start h1 { font-size: clamp(1.3rem, 12cqw, 2.5rem); }
 .start-wrap { gap: 0.6rem 1.1rem; }
 .start-left { gap: 0.4rem; }
 .tape-label { font-size: 0.62rem; padding: 0.25em 0.7em; }

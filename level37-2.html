@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>level37-2</title>
+<link rel="icon" href="data:,">
+<link href="./vendor/fonts/fonts.css" rel="stylesheet">
+<style>
+:root { --vt: 'VT323', monospace; --anon: 'Anonymous Pro', monospace; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+width: 100%; height: 100%; overflow: hidden; background: #000;
+font-family: var(--vt); user-select: none; -webkit-user-select: none;
+touch-action: none; overscroll-behavior: none;
+}
+body::before {
+content: ""; position: fixed; inset: 0; pointer-events: none;
+background: repeating-linear-gradient(to bottom,
+rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
+transparent 2px, transparent 4px);
+}
+body::after {
+content: ""; position: fixed; inset: 0; pointer-events: none;
+background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.75) 100%);
+}
+.wrap {
+position: relative; z-index: 1; height: 100%;
+display: flex; flex-direction: column; align-items: center; justify-content: center;
+gap: 1.2rem; color: #9adfe8; text-align: center; padding: 2rem 1rem;
+text-shadow: 2px 0 rgba(0, 200, 255, 0.3), -2px 0 rgba(0, 255, 120, 0.25);
+}
+h1 { font-family: var(--vt); font-weight: normal; letter-spacing: 0.14em;
+font-size: clamp(2.2rem, 9vw, 4.5rem); }
+.tape { font-size: 0.72rem; letter-spacing: 0.3em; opacity: 0.55;
+border: 1px solid rgba(154, 223, 232, 0.4); padding: 0.35em 1em; }
+.msg { font-family: var(--anon); font-size: 0.85rem; line-height: 1.9;
+max-width: 26rem; opacity: 0.85; letter-spacing: 0.05em; }
+.btns { display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: center; }
+a.btn {
+font-family: var(--vt); font-size: 1.05rem; letter-spacing: 0.15em;
+color: #d8f5de; text-decoration: none; padding: 0.45em 1.2em;
+border: 1px solid rgba(140, 220, 160, 0.65); background: rgba(16, 40, 22, 0.9);
+text-shadow: 0 0 8px rgba(120, 255, 160, 0.35); cursor: pointer;
+-webkit-tap-highlight-color: transparent;
+}
+a.btn:hover, a.btn:active { background: rgba(60, 160, 90, 0.9); color: #fff; }
+a.btn.alt { color: #cfc27a; border-color: rgba(207, 194, 122, 0.55);
+background: rgba(30, 27, 11, 0.9); text-shadow: none; }
+a.btn.alt:hover, a.btn.alt:active { background: rgba(90, 80, 30, 0.9); color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="tape">CINTA #?? — SECTOR NO CONSTRUIDO</div>
+<h1>ALCANTARILLAS</h1>
+<div class="msg">LA GRIETA DE LOS POOLROOMS TE ENVIÓ A UN LUGAR EN PROCESO DE CONSTRUCCIÓ- VUELVE DESPUÉS<br><br>
+xd.<br>
+Volvé al HUB o al Nivel 0 pelotudo.</div>
+<div class="btns">
+<a class="btn" href="https://santyxdddgt.github.io/backrooms/the-hub.html">◀ VOLVER AL HUB SI ES QUE TIENES
+MIEDO DE EL 0 IDIOTA</a>
+<a class="btn alt" href="https://santyxdddgt.github.io/backrooms/index.html">▶ NIVEL 0</a>
+</div>
+</div>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   qol.js — v3.7 KIT DE CALIDAD DE VIDA (BACKROOMS, todos los niveles)
+   qol.js — v3.8 KIT DE CALIDAD DE VIDA (BACKROOMS, todos los niveles)
    1) QOL.fitTitle: encoge el <h1> de la pantalla de título para que
       NUNCA solape la columna del informe (PC y móvil).
    2) QOL.tut: tutorial por nivel — la PRIMERA vez que se inicia el
@@ -11,9 +11,20 @@
    4) QOL.credits: pestaña © CRÉDITOS en la pantalla de título de todos
       los niveles — grande y fácil de encontrar, sin tapar nada — con el
       modal de créditos de los modelos 3D (sin repeticiones).
+   5) [v3.8] QOL.enterFs: pantalla completa AUTOMÁTICA al entrar al nivel
+      como jugador (móvil: fullscreen + landscape · PC: fullscreen),
+      también tras terminar el tutorial (el re-clic del CTA conserva el
+      gesto de usuario, así requestFullscreen es válido).
+   6) [v3.8] QOL.devWarn: aviso al usar la CINTA PRIVILEGIADA (DEV) —
+      recomienda jugar normalmente si eres nuevo. En el NIVEL 0 exige
+      mantener pulsado 5 s «SÍ, YA JUGUÉ ANTES» (o «SOY NUEVO» te saca
+      de DEV); en el resto es un aviso simple SALIR / CONTINUAR A DEV.
+      Con la confirmación de 5 s queda marcado veterano (localStorage
+      BR_DEV_VETERAN) y no vuelve a molestar en ningún nivel.
    Carga:  <script src="./vendor/qol.js" defer
              data-fit="SELECTOR_H1" data-cont="SELECTOR_CONTENEDOR"
-             data-tut="SELECTOR_BOTON|ID_NIVEL"></script>
+             data-tut="SELECTOR_BOTON|ID_NIVEL"
+             data-dev="SELECTOR_CINTA_DEV|hold|warn"></script>
    Independiente de three.js y del resto del juego (sin dependencias).
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -23,8 +34,8 @@ var LS_SEEN = function (id) { return 'BR_TUT_SEEN_' + id; };
 
 /* ───────────────────────── CSS (namespace .qol-) ───────────────────────── */
 var CSS = ''
-+ '.qol-ask,.qol-tut{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(4,4,2,.82);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);font-family:"Special Elite","Courier New",monospace;color:#e8dc96;}'
-+ '.qol-ask.hidden,.qol-tut.hidden{display:none}'
++ '.qol-ask,.qol-tut,.qol-dev{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(4,4,2,.82);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);font-family:"Special Elite","Courier New",monospace;color:#e8dc96;}'
++ '.qol-ask.hidden,.qol-tut.hidden,.qol-dev.hidden{display:none}'
 + '.qol-card{width:min(92vw,26rem);border:2px solid rgba(232,220,150,.55);background:rgba(14,12,5,.96);padding:1.2rem 1.1rem;text-align:center;box-shadow:0 0 34px rgba(232,220,150,.13),inset 0 0 24px rgba(0,0,0,.5)}'
 + '.qol-kick{font-size:.62rem;letter-spacing:.34em;opacity:.65;margin-bottom:.7rem}'
 + '.qol-q{font-size:.95rem;line-height:1.65;margin-bottom:1.05rem;color:#f3ecc8}'
@@ -63,7 +74,13 @@ var CSS = ''
 + '.qol-crd-item .qol-crd-l{color:#9a8f62}'
 + '.qol-crd-url{display:block;font-size:.6rem;line-height:1.5;letter-spacing:.02em;color:#7dd3c8;word-break:break-all;-webkit-user-select:text;user-select:text}'
 + '.qol-crd-note{margin-top:.9rem;font-size:.62rem;line-height:1.6;color:#9a8f62;letter-spacing:.06em}'
-+ '.qol-cred .qol-btns{margin-top:1rem}';
++ '.qol-cred .qol-btns{margin-top:1rem}'
+/* [v3.8] aviso DEV — botón de mantener pulsado (hold 5 s) */
++ '.qol-hold{position:relative;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}'
++ '.qol-holdfill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(125,255,154,.22);border-right:1px solid rgba(125,255,154,.65);pointer-events:none}'
++ '.qol-holdlbl{position:relative;display:inline-block}'
++ '.qol-hold.ok{border-color:rgba(125,255,154,.9);color:#d2ffdc}'
++ '.qol-hold.ok .qol-holdfill{width:100%;background:rgba(125,255,154,.32)}';
 function injectCSS() {
   var st = document.createElement('style');
   st.textContent = CSS;
@@ -238,6 +255,322 @@ function initCredits(fitSel) {
   credTick();
   clearInterval(credTimer);
   credTimer = setInterval(credTick, 500);
+}
+
+/* ───────────────────────── [v3.8] FULLSCREEN AL ENTRAR ─────────────────────────
+   QOL.enterFs(cb): pide pantalla completa sobre <html> (PC y móvil; en móvil
+   además bloquea la orientación a landscape). Si llega cb, se llama DESPUÉS
+   de que la promesa de fullscreen se asiente (~30-70 ms), para que el
+   requestPointerLock del nivel no compita con la transición (orden canónico:
+   fullscreen → pointer lock). Tras asentarse re-dispara 'resize' un par de
+   veces: los niveles recalculan renderer/cámara al escuchar 'resize'.
+   Debe llamarse dentro del gesto de usuario (clic en ENTRAR / re-clic del
+   tutorial): la activación transitoria de Chrome cubre el re-clic sintético. */
+var fsEnterBusy = false;   /* (reservado; aún sin uso) */
+function enterFs(cb) {
+  var p = null;
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen)
+      p = document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+  } catch (_) {}
+  try {
+    if (screen.orientation && screen.orientation.lock)
+      screen.orientation.lock('landscape').catch(function () {});
+  } catch (_) {}
+  var run = function () {
+    if (cb) { try { cb(); } catch (_) {} }
+    setTimeout(function () { try { dispatchEvent(new Event('resize')); } catch (_) {} }, 120);
+    setTimeout(function () { try { dispatchEvent(new Event('resize')); } catch (_) {} }, 420);
+  };
+  if (p && p.then) p.then(function () { setTimeout(run, 30); }, run);
+  else run();
+}
+
+/* ───────────────────────── [v3.8] AVISO CINTA DEV ─────────────────────────
+   Al pulsar la CINTA PRIVILEGIADA — DEV sin ser "veterano":
+   · NIVEL 0 (modo hold): diapositiva + «SÍ, YA JUGUÉ ANTES» (mantener
+     pulsado 5 s) + «SOY NUEVO» (recomienda jugar normal y NO entra en DEV).
+     El hold se confirma al SOLTAR tras 5 s: así el pointerup es un gesto
+     fresco y el fullscreen/requestPointerLock posteriores son válidos.
+   · Resto (modo warn): misma diapositiva + «SALIR» / «CONTINUAR A DEV».
+   Veterano = completó el hold de 5 s una vez (BR_DEV_VETERAN): a partir de
+   ahí la cinta DEV entra directa en TODOS los niveles. */
+var LS_VET = 'BR_DEV_VETERAN';
+function isVeteran() { try { return localStorage.getItem(LS_VET) === '1'; } catch (e) { return false; } }
+function markVeteran() { try { localStorage.setItem(LS_VET, '1'); } catch (e) {} }
+
+var TXT_DEV_WARN = 'Si es tu <b>primera vez</b>, juega <b>normalmente</b>: el tutorial te enseña las mecánicas <b>sin spoilers</b> y tu progreso cuenta de verdad. La cinta <b>DEV</b> puede spoilearte el final.';
+var TXT_DEV_HOLD = TXT_DEV_WARN + '<br>¿Ya conoces el juego? <b>Mantén pulsado</b> el botón verde durante <b>5 segundos</b>.';
+var TXT_DEV_NEW = '◆ <b>JUEGA NORMALMENTE</b><br>Inserta la cinta normal: el tutorial te espera en el nivel y tu progreso contará de verdad. Vuelve a la cinta DEV cuando ya conozcas el juego.';
+var HOLD_MS = 5000;
+var LBL_HOLD = 'SÍ, YA JUGUÉ ANTES — MANTÉN 5 s';
+
+var devEl = null, devCv = null, devOpen = false, devRaf = 0, devT = 0, devLast = 0;
+var devOnOk = null, devOnCancel = null;
+var holdBtn = null, holdFill = null, holdLbl = null, holding = false, holdDone = false, holdT0 = 0;
+
+function devVisible() { return !!(devEl && !devEl.classList.contains('hidden')); }
+function buildDevWarn() {
+  if (devEl) return;
+  injectCSS();
+  devEl = document.createElement('div');
+  devEl.className = 'qol-dev hidden';
+  devEl.innerHTML = '<div class="qol-tcard">'
+    + '<div class="qol-kick" id="qolDevKick">CINTA PRIVILEGIADA — DEV</div>'
+    + '<div class="qol-frame"><canvas id="qolDevCv" width="360" height="210"></canvas><div class="qol-scan"></div></div>'
+    + '<div class="qol-txt" id="qolDevTxt"></div>'
+    + '<div class="qol-btns" id="qolDevBtns"></div>'
+    + '</div>';
+  document.body.appendChild(devEl);
+  devCv = devEl.querySelector('#qolDevCv');
+  document.addEventListener('keydown', function (e) {
+    if (devOpen && e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeDevWarn(); }
+  }, true);
+}
+function mkDevBtn(txt, cls, fn) {
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.className = cls;
+  b.textContent = txt;
+  b.addEventListener('click', function (e) { e.stopPropagation(); fn(); });
+  return b;
+}
+/* botón "SOY NUEVO": cambia el cuerpo del modal al mensaje de recomendación */
+function devSoyNuevo() {
+  var txt = devEl.querySelector('#qolDevTxt');
+  var btns = devEl.querySelector('#qolDevBtns');
+  txt.innerHTML = TXT_DEV_NEW;
+  btns.innerHTML = '';
+  btns.appendChild(mkDevBtn('ENTENDIDO ✕', 'qol-b', function () { closeDevWarn(); }));
+}
+function openDevWarn(mode, onOk, onCancel) {
+  buildDevWarn();
+  devOnOk = onOk || null; devOnCancel = onCancel || null;
+  devOpen = true;
+  var txt = devEl.querySelector('#qolDevTxt');
+  var btns = devEl.querySelector('#qolDevBtns');
+  btns.innerHTML = '';
+  holdBtn = null; holding = false; holdDone = false;
+  if (mode === 'hold') {
+    txt.innerHTML = TXT_DEV_HOLD;
+    btns.appendChild(mkDevBtn('SOY NUEVO', 'qol-b', devSoyNuevo));
+    holdBtn = document.createElement('button');
+    holdBtn.type = 'button';
+    holdBtn.className = 'qol-b yes qol-hold';
+    holdBtn.innerHTML = '<span class="qol-holdfill"></span><span class="qol-holdlbl">' + LBL_HOLD + '</span>';
+    holdFill = holdBtn.querySelector('.qol-holdfill');
+    holdLbl = holdBtn.querySelector('.qol-holdlbl');
+    holdBtn.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      holdStart();
+    });
+    var end = function () { holdEnd(); };
+    holdBtn.addEventListener('pointerup', end);
+    holdBtn.addEventListener('pointercancel', end);
+    holdBtn.addEventListener('pointerleave', end);
+    holdBtn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    holdBtn.addEventListener('keydown', function (e) {
+      if (e.repeat) return;
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); holdStart(); }
+    });
+    holdBtn.addEventListener('keyup', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') holdEnd();
+    });
+    btns.appendChild(holdBtn);
+    /* [FIX QA r1] congela el ancho del botón al del rótulo MÁS LARGO: al
+       cambiar el texto (MANTÉN… 4.9 s / ✔ CONFIRMADO) el botón encogía, el
+       puntero quedaba fuera y un pointerleave espúreo cortaba el hold a los
+       ~120 ms (reproducido con ratón en Chromium; en táctil no pasaba por
+       la captura implícita del pointer). Ancho fijo = geometría estable. */
+    try {
+      var lbl0 = holdLbl.textContent;
+      holdBtn.style.whiteSpace = 'nowrap';
+      holdLbl.textContent = '✔ CONFIRMADO — SUELTA PARA ENTRAR';
+      var wMax = holdBtn.getBoundingClientRect().width;
+      holdLbl.textContent = lbl0;
+      var w0 = holdBtn.getBoundingClientRect().width;
+      holdBtn.style.width = Math.ceil(Math.max(w0, wMax)) + 'px';
+    } catch (_) {}
+  } else {
+    txt.innerHTML = TXT_DEV_WARN;
+    btns.appendChild(mkDevBtn('SALIR', 'qol-b', function () { closeDevWarn(); }));
+    btns.appendChild(mkDevBtn('CONTINUAR A DEV ▶', 'qol-b yes', function () {
+      devOpen = false; cancelAnimationFrame(devRaf);
+      devEl.classList.add('hidden');
+      var cb = devOnOk; devOnOk = null;
+      if (cb) cb();
+    }));
+  }
+  devEl.classList.remove('hidden');
+  devT = 0; devLast = 0;
+  cancelAnimationFrame(devRaf);
+  var loop = function (ts) {
+    if (!devOpen) return;
+    if (devLast) devT += Math.min(0.05, (ts - devLast) / 1000);
+    devLast = ts;
+    devDrawFrame(devT);
+    devRaf = requestAnimationFrame(loop);
+  };
+  devRaf = requestAnimationFrame(loop);
+}
+function closeDevWarn() {
+  if (!devEl || devEl.classList.contains('hidden')) return;
+  holding = false; holdDone = false;
+  devOpen = false;
+  cancelAnimationFrame(devRaf);
+  devEl.classList.add('hidden');
+  var cb = devOnCancel; devOnCancel = null;
+  devOnOk = null;
+  if (cb) cb();
+}
+function holdStart() {
+  if (holding) return;
+  holding = true; holdDone = false; holdT0 = performance.now();
+  cancelAnimationFrame(devRaf_hold);
+  var step = function () {
+    if (!holding) return;
+    var el = performance.now() - holdT0;
+    var k = Math.min(1, el / HOLD_MS);
+    if (holdFill) holdFill.style.width = (k * 100).toFixed(1) + '%';
+    if (holdLbl) holdLbl.textContent = k < 1
+      ? ('MANTÉN… ' + Math.max(0, (HOLD_MS - el) / 1000).toFixed(1) + ' s')
+      : '✔ CONFIRMADO — SUELTA PARA ENTRAR';
+    if (k >= 1) { holdDone = true; if (holdBtn) holdBtn.classList.add('ok'); return; }
+    devRaf_hold = requestAnimationFrame(step);
+  };
+  devRaf_hold = requestAnimationFrame(step);
+}
+var devRaf_hold = 0;
+function holdEnd() {
+  if (!holding) return;
+  holding = false;
+  cancelAnimationFrame(devRaf_hold);
+  if (holdDone) {
+    /* confirmación con gesto fresco (pointerup) → el re-clic de la cinta
+       puede pedir fullscreen/pointer lock sin problema */
+    markVeteran();
+    devOpen = false; cancelAnimationFrame(devRaf);
+    devEl.classList.add('hidden');
+    var cb = devOnOk; devOnOk = null;
+    if (cb) cb();
+    return;
+  }
+  if (holdBtn) holdBtn.classList.remove('ok');
+  if (holdFill) holdFill.style.width = '0';
+  if (holdLbl) holdLbl.textContent = LBL_HOLD;
+}
+/* ── dibujo de la diapositiva (canvas 360×210 lógico, mismo estilo que las
+   del tutorial: sala oscura + triángulo de aviso pulsante + cinta DEV) ── */
+function rr(g, x, y, w, h, r) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.lineTo(x + w - r, y); g.arcTo(x + w, y, x + w, y + r, r);
+  g.lineTo(x + w, y + h - r); g.arcTo(x + w, y + h, x + w - r, y + h, r);
+  g.lineTo(x + r, y + h); g.arcTo(x, y + h, x, y + h - r, r);
+  g.lineTo(x, y + r); g.arcTo(x, y, x + r, y, r);
+  g.closePath();
+}
+function drawDevTape(g, x, y, tw, th, t) {
+  g.save();
+  g.translate(x, y);
+  g.fillStyle = '#181610';
+  g.strokeStyle = 'rgba(125,255,154,.75)';
+  g.lineWidth = 2;
+  g.shadowColor = 'rgba(125,255,154,.35)'; g.shadowBlur = 12;
+  rr(g, -tw / 2, -th / 2, tw, th, 4); g.fill(); g.stroke();
+  g.shadowBlur = 0;
+  /* ventana central con los carretes */
+  g.fillStyle = '#0a0906';
+  rr(g, -tw / 2 + 12, -th / 2 + 6, tw - 24, th - 15, 3); g.fill();
+  var ry = (th - 19) / 2;
+  for (var i = -1; i <= 1; i += 2) {
+    g.save();
+    g.translate(i * tw * 0.21, -1);
+    g.rotate(t * (i === -1 ? 1.4 : -1.1));
+    g.strokeStyle = 'rgba(210,200,150,.8)'; g.lineWidth = 1.5;
+    g.beginPath(); g.arc(0, 0, ry * 0.62, 0, 7); g.stroke();
+    g.beginPath();
+    for (var k = 0; k < 3; k++) {
+      var a = k * Math.PI / 3;
+      g.moveTo(Math.cos(a) * ry * 0.18, Math.sin(a) * ry * 0.18);
+      g.lineTo(Math.cos(a) * ry * 0.62, Math.sin(a) * ry * 0.62);
+    }
+    g.stroke();
+    g.restore();
+  }
+  /* cinta entre carretes */
+  g.strokeStyle = 'rgba(120,110,70,.7)'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(-tw * 0.21, -1); g.lineTo(tw * 0.21, -1); g.stroke();
+  /* etiqueta */
+  g.fillStyle = '#cbbd7a';
+  rr(g, -tw / 2 + 8, th / 2 - 9.5, tw - 16, 7, 2); g.fill();
+  g.fillStyle = '#1c1a12';
+  g.font = 'bold 6.5px "Courier New",monospace';
+  g.textAlign = 'center';
+  g.fillText('CINTA PRIVILEGIADA — DEV', 0, th / 2 - 4);
+  g.restore();
+}
+function drawDevSlide(g, w, h, t) {
+  bgRoom(g, w, h, { dark: true });
+  var cx = w / 2;
+  /* triángulo de aviso pulsante */
+  var pu = 0.5 + 0.5 * Math.sin(t * 2.6);
+  g.save();
+  g.translate(cx, h * 0.27);
+  var s = 1 + pu * 0.06;
+  g.scale(s, s);
+  g.lineWidth = 3;
+  g.strokeStyle = 'rgba(255,210,74,' + (0.7 + pu * 0.3).toFixed(3) + ')';
+  g.fillStyle = 'rgba(58,44,10,.6)';
+  g.shadowColor = 'rgba(255,200,60,.55)'; g.shadowBlur = 10 + pu * 8;
+  g.beginPath();
+  g.moveTo(0, -16); g.lineTo(15.5, 12); g.lineTo(-15.5, 12); g.closePath();
+  g.fill(); g.stroke();
+  g.shadowBlur = 0;
+  g.fillStyle = '#ffd24a';
+  g.fillRect(-1.9, -8, 3.8, 11);
+  g.beginPath(); g.arc(0, 6.2, 2.1, 0, 7); g.fill();
+  g.restore();
+  /* cinta flotando */
+  var bob = Math.sin(t * 1.6) * 3;
+  drawDevTape(g, cx, h * 0.60 + bob, 118, 30, t);
+  /* rótulo */
+  g.save();
+  g.font = 'bold 9px "Courier New",monospace';
+  g.textAlign = 'center';
+  g.fillStyle = 'rgba(168,230,176,.92)';
+  g.shadowColor = 'rgba(125,255,154,.45)'; g.shadowBlur = 6;
+  g.fillText('¿PRIMERA VEZ? — RECOMENDADO: JUGAR NORMALMENTE', cx, h * 0.60 + bob + 32);
+  g.restore();
+}
+function devDrawFrame(t) {
+  if (!devCv) return;
+  var dpr = Math.min(2, W.devicePixelRatio || 1);
+  if (devCv.width !== CW * dpr) { devCv.width = CW * dpr; devCv.height = CH * dpr; }
+  var g = devCv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  try { drawDevSlide(g, CW, CH, t || 0); } catch (e) { /* nunca tumbar el juego por el aviso */ }
+}
+/* ── hook de la cinta DEV (fase CAPTURA, igual que el tutorial) ── */
+function hookDev(sel, mode) {
+  var pass = false;
+  document.addEventListener('click', function (e) {
+    if (pass) return;
+    if (isVeteran()) return;                     /* ya confirmó el hold de 5 s */
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var btn = t.closest(sel);
+    if (!btn || !document.querySelector(sel)) return;   /* fuera de la cinta: libre (botones del propio aviso incluidos) */
+    if (devOpen) { e.preventDefault(); e.stopPropagation(); return; }   /* aviso abierto: no re-entrar por la cinta */
+    e.preventDefault();
+    e.stopPropagation();
+    openDevWarn(mode, function () {
+      pass = true;
+      try { btn.click(); } catch (err) {}
+      setTimeout(function () { pass = false; }, 800);
+    }, null);
+  }, true);
 }
 
 /* ───────────────────────── TUTORIAL — DOM base ───────────────────────── */
@@ -1222,6 +1555,11 @@ function boot() {
       var parts = ds.tut.split('|');
       if (parts.length === 2) hook(parts[0], parts[1]);
     }
+    /* [v3.8] aviso de la cinta DEV: data-dev="SELECTOR|hold|warn" */
+    if (ds.dev) {
+      var pd = ds.dev.split('|');
+      if (pd.length >= 2) hookDev(pd[0], pd[1]);
+    }
   }
   /* [v3.7] pestaña © CRÉDITOS en todos los niveles (con o sin data-fit) */
   var s0 = scripts[0], ds0 = (s0 && s0.dataset) || {};
@@ -1236,6 +1574,12 @@ W.QOL = {
   levelLinks: levelLinks,
   makeX2: makeX2,
   LEVELS: LEVELS,
+  enterFs: enterFs,
+  devWarn: {
+    isVeteran: isVeteran,
+    open: openDevWarn,
+    hook: hookDev
+  },
   credits: { open: openCredits, tab: function () { return credTab; } },
   tut: {
     hook: hook,
@@ -1270,6 +1614,26 @@ W.__QOL = {
     if (!keepOpen) { T.open = false; }
     return this.state();
   },
-  open: function (id) { buildDOM(); T.id = id; T.slides = (TEXTS[id] || {}).slides || []; T.idx = 0; T.open = true; render(); tutEl.classList.remove('hidden'); T.tclock = 2.0; draw(); return this.state(); }
+  open: function (id) { buildDOM(); T.id = id; T.slides = (TEXTS[id] || {}).slides || []; T.idx = 0; T.open = true; render(); tutEl.classList.remove('hidden'); T.tclock = 2.0; draw(); return this.state(); },
+  /* [v3.8] aviso DEV — estado + render determinista de la diapositiva */
+  dev: {
+    state: function () {
+      return {
+        open: devVisible(),
+        veteran: isVeteran(),
+        holding: holding, holdDone: holdDone,
+        holdLbl: holdLbl ? holdLbl.textContent : '',
+        fillW: holdFill ? holdFill.style.width : '0',
+        txt: devEl ? devEl.querySelector('#qolDevTxt').textContent : '',
+        buttons: devEl ? Array.prototype.map.call(devEl.querySelectorAll('#qolDevBtns button'), function (b) { return b.textContent.trim(); }) : []
+      };
+    },
+    show: function (t) {   /* render determinista de UN frame de la diapositiva */
+      buildDevWarn();
+      devDrawFrame(t || 1.5);
+      return true;
+    },
+    setVeteran: function (v) { try { v ? localStorage.setItem(LS_VET, '1') : localStorage.removeItem(LS_VET); } catch (e) {} }
+  }
 };
 })();

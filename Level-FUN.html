@@ -68,7 +68,23 @@
   <div style="letter-spacing:.28em;font-size:.6rem;opacity:.65;margin-bottom:.5rem">■ CAMBIAR DE NIVEL</div>
   <div id="dev-levels"></div>
 </div>
-<script src="./qol.js?v=37" defer></script>
+<script src="./qol.js?v=38" defer></script>
+<script>
+  /* [v3.8] pantalla completa al primer gesto del jugador (LEVEL FUN es una
+     pantalla estática de celebración: no hay botón ENTRAR ni tutorial, así
+     que el primer toque/clic/tecla activa el fullscreen global del juego). */
+  (function () {
+    var done = false;
+    function fs() {
+      if (done) return;
+      if (!(window.QOL && QOL.enterFs)) return;   /* qol.js aún no cargó: reintenta al siguiente gesto */
+      done = true;
+      QOL.enterFs();
+    }
+    document.addEventListener('pointerdown', fs, { passive: true });
+    document.addEventListener('keydown', fs);
+  })();
+</script>
 <script>
   /* [v3.6] selector de nivel discreto (siempre disponible en LEVEL FUN) */
   window.addEventListener('DOMContentLoaded', function () {
